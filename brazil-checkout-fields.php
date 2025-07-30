@@ -117,6 +117,9 @@ class Brazil_Checkout_Fields_Blocks {
                     border-radius: 8px;
                     padding: 20px;
                     margin: 20px 0;
+                    box-sizing: border-box;
+                    max-width: 100%;
+                    overflow: hidden;
                 }
                 .brazil-checkout-fields h4 {
                     margin: 0 0 15px 0;
@@ -125,6 +128,8 @@ class Brazil_Checkout_Fields_Blocks {
                 }
                 .brazil-field-row {
                     margin-bottom: 15px;
+                    width: 100%;
+                    box-sizing: border-box;
                 }
                 .brazil-field-row label {
                     display: block;
@@ -135,11 +140,13 @@ class Brazil_Checkout_Fields_Blocks {
                 .brazil-field-row input,
                 .brazil-field-row select {
                     width: 100%;
+                    max-width: 100%;
                     padding: 12px;
                     border: 1px solid #ced4da;
                     border-radius: 4px;
                     font-size: 16px;
                     transition: border-color 0.3s;
+                    box-sizing: border-box;
                 }
                 .brazil-field-row input:focus,
                 .brazil-field-row select:focus {
@@ -168,6 +175,12 @@ class Brazil_Checkout_Fields_Blocks {
                     color: #28a745;
                     font-size: 14px;
                     margin-top: 5px;
+                    display: block;
+                }
+                .brazil-document-hint {
+                    font-size: 12px;
+                    color: #666;
+                    margin-top: 3px;
                     display: block;
                 }
                 .brazil-checkout-validation-summary {
