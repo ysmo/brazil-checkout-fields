@@ -120,6 +120,7 @@ class Brazil_Checkout_Fields_Blocks {
                     box-sizing: border-box;
                     max-width: 100%;
                     overflow: hidden;
+                    display: none !important;
                 }
                 .brazil-checkout-fields h4 {
                     margin: 0 0 15px 0;
@@ -198,6 +199,12 @@ class Brazil_Checkout_Fields_Blocks {
                 .brazil-checkout-validation-summary ul {
                     margin: 5px 0 0 20px;
                     padding: 0;
+                }
+                .brazil-checkout-fields.brazil-hidden {
+                    display: none !important;
+                }
+                .brazil-checkout-fields.brazil-visible {
+                    display: block !important;
                 }
             ');
             
@@ -314,23 +321,86 @@ class Brazil_Checkout_Fields_Blocks {
                 validateAll: function() {
                     this.errors = [];
                     
-                    var document = $('#brazil_document').val();
+                    // 检查是否选择了巴西国家
+                    var isBrazilSelected = this.isBrazilCountrySelected();
                     
+                    console.log('validateAll: 是否选择巴西:', isBrazilSelected);
+                    
+                    // 如果不是巴西，跳过验证
+                    if (!isBrazilSelected) {
+                        console.log('validateAll: 不是巴西，跳过验证');
+                        return true;
+                    }
+                    
+                    // 检查面板是否可见
+                    var brazilPanel = $('.brazil-checkout-fields');
+                    if (brazilPanel.length === 0 || (!brazilPanel.is(':visible') && !brazilPanel.hasClass('brazil-visible'))) {
+                        console.log('validateAll: 巴西面板不可见，跳过验证');
+                        return true;
+                    }
+                    
+                    var documentField = $('#brazil_document');
+                    var document = documentField.val();
+                    console.log('validateAll: 检查文档字段值:', document);
+                    
+                    // 1. 检查是否为空
                     if (!document || !document.trim()) {
+                        console.log('validateAll: 文档字段为空，添加错误');
                         this.errors.push(brazil_checkout_ajax.messages.document_required);
                         return false;
                     }
                     
-                    if (!this.validateDocument(document)) {
+                    // 2. 检查字段是否已经标记为无效
+                    if (documentField.hasClass('brazil-field-invalid')) {
+                        console.log('validateAll: 字段已标记为无效');
                         this.errors.push(brazil_checkout_ajax.messages.document_invalid);
                         return false;
                     }
                     
+                    // 3. 执行完整的文档验证
+                    if (!this.validateDocument(document)) {
+                        console.log('validateAll: 文档验证失败');
+                        this.errors.push(brazil_checkout_ajax.messages.document_invalid);
+                        return false;
+                    }
+                    
+                    console.log('validateAll: 验证通过');
                     return true;
+                },
+                
+                // 检查是否选择了巴西国家
+                isBrazilCountrySelected: function() {
+                    var countrySelectors = [
+                        'select[name="billing_country"]',
+                        'select[name="shipping_country"]', 
+                        '#billing_country',
+                        '#shipping_country',
+                        '[data-field="country"] select',
+                        'select[id*="country"]',
+                        'select[name*="country"]'
+                    ];
+                    
+                    for (var i = 0; i < countrySelectors.length; i++) {
+                        var countryField = $(countrySelectors[i]);
+                        if (countryField.length > 0) {
+                            var selectedCountry = countryField.val();
+                            if (selectedCountry === 'BR') {
+                                return true;
+                            }
+                        }
+                    }
+                    
+                    return false;
                 },
                 
                 // 显示验证错误
                 showErrors: function() {
+                    // 如果没有错误，隐藏摘要
+                    if (this.errors.length === 0) {
+                        this.hideErrors();
+                        return;
+                    }
+                    
                     var summaryHtml = '<div class="brazil-checkout-validation-summary show">' +
                         '<strong>Por favor, corrija os seguintes erros:</strong>' +
                         '<ul>';
@@ -341,18 +411,26 @@ class Brazil_Checkout_Fields_Blocks {
                     
                     summaryHtml += '</ul></div>';
                     
+                    // 移除旧的摘要
                     $('.brazil-checkout-validation-summary').remove();
-                    $('.brazil-checkout-fields').prepend(summaryHtml);
                     
-                    // 滚动到错误区域
-                    $('html, body').animate({
-                        scrollTop: $('.brazil-checkout-fields').offset().top - 50
-                    }, 500);
+                    // 只有在面板可见时才显示错误摘要
+                    var brazilPanel = $('.brazil-checkout-fields');
+                    if (brazilPanel.is(':visible') || brazilPanel.hasClass('brazil-visible')) {
+                        brazilPanel.prepend(summaryHtml);
+                        
+                        // 滚动到错误区域
+                        $('html, body').animate({
+                            scrollTop: brazilPanel.offset().top - 50
+                        }, 500);
+                    }
                 },
                 
                 // 隐藏验证错误
                 hideErrors: function() {
-                    $('.brazil-checkout-validation-summary').removeClass('show').hide();
+                    $('.brazil-checkout-validation-summary').removeClass('show').fadeOut(300, function() {
+                        $(this).remove();
+                    });
                 }
             };
             
@@ -417,9 +495,14 @@ class Brazil_Checkout_Fields_Blocks {
                     }
                 }
                 
-                // 设置事件监听器
+                // 设置事件监听器和初始状态
                 setupFieldListeners();
                 setupValidation();
+                
+                // 初始化面板显示状态
+                setTimeout(function() {
+                    checkCountryAndToggleBrazilFields();
+                }, 1000);
             }
             
             function injectBrazilFieldsToFieldsBlock() {
@@ -429,6 +512,11 @@ class Brazil_Checkout_Fields_Blocks {
                 
                 setupFieldListeners();
                 setupValidation();
+                
+                // 初始化面板显示状态
+                setTimeout(function() {
+                    checkCountryAndToggleBrazilFields();
+                }, 1000);
             }
             
             function injectBrazilFieldsToCheckoutBlock() {
@@ -446,6 +534,11 @@ class Brazil_Checkout_Fields_Blocks {
                 
                 setupFieldListeners();
                 setupValidation();
+                
+                // 初始化面板显示状态
+                setTimeout(function() {
+                    checkCountryAndToggleBrazilFields();
+                }, 1000);
             }
             
             function injectBrazilFieldsFallback() {
@@ -455,9 +548,157 @@ class Brazil_Checkout_Fields_Blocks {
                 
                 setupFieldListeners();
                 setupValidation();
+                
+                // 初始化面板显示状态
+                setTimeout(function() {
+                    checkCountryAndToggleBrazilFields();
+                }, 1000);
+            }
+            
+            // 全局的国家检查和面板切换函数
+            function checkCountryAndToggleBrazilFields() {
+                // 查找各种可能的国家选择器
+                var countrySelectors = [
+                    'select[name="billing_country"]',
+                    'select[name="shipping_country"]', 
+                    '#billing_country',
+                    '#shipping_country',
+                    '[data-field="country"] select',
+                    'select[id*="country"]',
+                    'select[name*="country"]'
+                ];
+                
+                var isBrazilSelected = false;
+                var foundCountryField = false;
+                
+                for (var i = 0; i < countrySelectors.length; i++) {
+                    var countryField = $(countrySelectors[i]);
+                    if (countryField.length > 0) {
+                        foundCountryField = true;
+                        var selectedCountry = countryField.val();
+                        console.log('检测到国家选择器:', countrySelectors[i], '选择的国家:', selectedCountry);
+                        
+                        if (selectedCountry === 'BR') {
+                            isBrazilSelected = true;
+                            break;
+                        }
+                    }
+                }
+                
+                console.log('找到国家字段:', foundCountryField, '是否选择巴西:', isBrazilSelected);
+                
+                // 确保面板存在
+                var brazilPanel = $('.brazil-checkout-fields');
+                if (brazilPanel.length === 0) {
+                    console.log('巴西面板未找到，跳过切换');
+                    return;
+                }
+                
+                if (isBrazilSelected) {
+                    console.log('显示巴西面板');
+                    brazilPanel.removeClass('brazil-hidden').addClass('brazil-visible').hide().slideDown(300);
+                    $('#brazil_document').prop('required', true);
+                    
+                    // 确保验证函数被正确绑定
+                    setTimeout(function() {
+                        if (typeof window.validateBrazilFields === 'function') {
+                            console.log('巴西验证函数已就绪');
+                        } else {
+                            console.log('警告：巴西验证函数未就绪');
+                        }
+                    }, 500);
+                } else {
+                    console.log('隐藏巴西面板');
+                    brazilPanel.slideUp(300, function() {
+                        $(this).removeClass('brazil-visible').addClass('brazil-hidden');
+                    });
+                    $('#brazil_document').prop('required', false).val('');
+                    // 清空隐藏字段
+                    $('#brazil_customer_type').val('');
+                    $('#brazil_cpf').val('');
+                    $('#brazil_cnpj').val('');
+                    // 清除验证状态
+                    $('.brazil-document-error').hide();
+                    $('.brazil-document-success').hide();
+                    $('#brazil_document').removeClass('brazil-field-invalid brazil-field-valid');
+                    if (typeof brazilValidation !== 'undefined') {
+                        brazilValidation.hideErrors();
+                    }
+                }
             }
             
             function setupFieldListeners() {
+                // 初始检查 - 延迟执行确保DOM完全加载
+                setTimeout(function() {
+                    console.log('执行初始国家检查');
+                    checkCountryAndToggleBrazilFields();
+                }, 500);
+                
+                // 再次检查，确保捕获到所有情况
+                setTimeout(function() {
+                    console.log('执行第二次国家检查');
+                    checkCountryAndToggleBrazilFields();
+                }, 2000);
+                
+                // 强制检查 - 确保非巴西国家时面板保持隐藏
+                setTimeout(function() {
+                    console.log('执行强制检查');
+                    var brazilPanel = $('.brazil-checkout-fields');
+                    if (brazilPanel.length > 0 && !brazilValidation.isBrazilCountrySelected()) {
+                        console.log('强制隐藏非巴西面板');
+                        brazilPanel.removeClass('brazil-visible').addClass('brazil-hidden').hide();
+                    }
+                }, 3000);
+                
+                // 监听国家选择变化 - 使用事件委托
+                $(document).on('change', 'select[name="billing_country"], select[name="shipping_country"], #billing_country, #shipping_country, select[id*="country"], select[name*="country"]', function() {
+                    console.log('国家选择发生变化:', $(this).attr('name') || $(this).attr('id'), '新值:', $(this).val());
+                    setTimeout(checkCountryAndToggleBrazilFields, 100);
+                });
+                
+                // 监听输入事件（有些主题可能使用输入而不是选择）
+                $(document).on('input', 'select[name="billing_country"], select[name="shipping_country"], #billing_country, #shipping_country', function() {
+                    console.log('国家输入发生变化:', $(this).attr('name') || $(this).attr('id'), '新值:', $(this).val());
+                    setTimeout(checkCountryAndToggleBrazilFields, 100);
+                });
+                
+                // 使用MutationObserver监听DOM变化，以捕获动态生成的国家选择器
+                var countryObserver = new MutationObserver(function(mutations) {
+                    var shouldCheck = false;
+                    mutations.forEach(function(mutation) {
+                        if (mutation.addedNodes.length > 0) {
+                            $(mutation.addedNodes).find('select[name*="country"], select[id*="country"]').each(function() {
+                                console.log('检测到新的国家选择器:', $(this).attr('name') || $(this).attr('id'));
+                                $(this).on('change input', function() {
+                                    console.log('新国家选择器变化:', $(this).val());
+                                    setTimeout(checkCountryAndToggleBrazilFields, 100);
+                                });
+                                shouldCheck = true;
+                            });
+                        }
+                        
+                        // 检查是否有属性变化（如value变化）
+                        if (mutation.type === 'attributes' && (mutation.attributeName === 'value' || mutation.attributeName === 'selected')) {
+                            var target = $(mutation.target);
+                            if (target.is('select') && (target.attr('name') || target.attr('id') || '').toLowerCase().includes('country')) {
+                                console.log('检测到国家字段属性变化:', target.attr('name') || target.attr('id'), '新值:', target.val());
+                                shouldCheck = true;
+                            }
+                        }
+                    });
+                    
+                    if (shouldCheck) {
+                        setTimeout(checkCountryAndToggleBrazilFields, 100);
+                    }
+                });
+                
+                countryObserver.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['value', 'selected']
+                });
+                
                 // 智能文档输入处理
                 $(document).on('input', '#brazil_document', function() {
                     var value = $(this).val().replace(/[^0-9]/g, '');
@@ -466,6 +707,11 @@ class Brazil_Checkout_Fields_Blocks {
                     var maxLength = 18;
                     var placeholder = '';
                     var hint = '';
+                    
+                    // 清除之前的验证错误摘要（当用户开始输入时）
+                    if (value.length > 0) {
+                        brazilValidation.hideErrors();
+                    }
                     
                     // 根据检测到的类型格式化输入
                     if (documentType === 'cpf') {
@@ -535,7 +781,7 @@ class Brazil_Checkout_Fields_Blocks {
             
             function createBrazilFieldsHtml() {
                 return `
-                    <div class="brazil-checkout-fields">
+                    <div class="brazil-checkout-fields brazil-hidden">
                         <div class="brazil-field-row">
                             <label for="brazil_document">🇧🇷 CPF / CNPJ *</label>
                             <input type="text" id="brazil_document" name="brazil_document" 
@@ -563,116 +809,342 @@ class Brazil_Checkout_Fields_Blocks {
                 setupValidation();
                 
                 setTimeout(function() {
-                    $('#brazil_customer_type').val('pessoa_fisica').trigger('change');
-                }, 500);
-            }
-            
-            function setupFieldListeners() {
-                // 客户类型切换
-                $(document).on('change', '#brazil_customer_type', function() {
-                    var customerType = $(this).val();
-                    brazilValidation.hideErrors();
-                    
-                    if (customerType === 'pessoa_fisica') {
-                        $('.cpf-field').removeClass('brazil-field-hidden');
-                        $('.cnpj-field').addClass('brazil-field-hidden');
-                        $('#brazil_cpf').prop('required', true);
-                        $('#brazil_cnpj').prop('required', false).val('');
-                    } else if (customerType === 'pessoa_juridica') {
-                        $('.cpf-field').addClass('brazil-field-hidden');
-                        $('.cnpj-field').removeClass('brazil-field-hidden');
-                        $('#brazil_cpf').prop('required', false).val('');
-                        $('#brazil_cnpj').prop('required', true);
-                    }
-                });
-                
-                // CPF格式化和实时验证
-                $(document).on('input', '#brazil_cpf', function() {
-                    var value = $(this).val().replace(/[^0-9]/g, '');
-                    if (value.length >= 11) {
-                        value = value.substring(0, 11);
-                        value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-                    }
-                    $(this).val(value);
-                    
-                    // 实时验证
-                    validateFieldReal('#brazil_cpf', 'cpf');
-                });
-                
-                // CNPJ格式化和实时验证
-                $(document).on('input', '#brazil_cnpj', function() {
-                    var value = $(this).val().replace(/[^0-9]/g, '');
-                    if (value.length >= 14) {
-                        value = value.substring(0, 14);
-                        value = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-                    }
-                    $(this).val(value);
-                    
-                    // 实时验证
-                    validateFieldReal('#brazil_cnpj', 'cnpj');
-                });
-                
-                console.log('巴西字段事件监听器已设置');
+                    checkCountryAndToggleBrazilFields();
+                }, 1000);
             }
             
             function setupValidation() {
                 // 创建全局验证函数
                 window.validateBrazilFields = function() {
-                    console.log('验证巴西字段被调用');
-                    var isValid = brazilValidation.validateAll();
-                    if (!isValid) {
-                        brazilValidation.showErrors();
-                    } else {
+                    console.log('🔍 验证巴西字段被调用');
+                    
+                    // 检查是否选择了巴西国家
+                    var isBrazilSelected = brazilValidation.isBrazilCountrySelected();
+                    console.log('🌍 全局验证: 是否选择巴西:', isBrazilSelected);
+                    
+                    // 如果不是巴西，跳过验证
+                    if (!isBrazilSelected) {
+                        console.log('✅ 全局验证: 跳过验证（不是巴西）');
+                        brazilValidation.errors = [];
                         brazilValidation.hideErrors();
+                        return true;
                     }
-                    return isValid;
+                    
+                    // 检查面板是否存在且可见
+                    var brazilPanel = $('.brazil-checkout-fields');
+                    var panelVisible = brazilPanel.length > 0 && (brazilPanel.is(':visible') || brazilPanel.hasClass('brazil-visible'));
+                    console.log('👁️ 全局验证: 面板可见:', panelVisible);
+                    
+                    if (!panelVisible) {
+                        console.log('✅ 全局验证: 跳过验证（面板不可见）');
+                        brazilValidation.errors = [];
+                        brazilValidation.hideErrors();
+                        return true;
+                    }
+                    
+                    // 执行巴西字段验证
+                    console.log('🧪 全局验证: 执行巴西字段验证');
+                    
+                    var documentField = $('#brazil_document');
+                    var documentValue = documentField.val() || '';
+                    
+                    console.log('📄 全局验证: 文档字段值:', '"' + documentValue + '"');
+                    console.log('⚠️ 全局验证: 字段是否标记为无效:', documentField.hasClass('brazil-field-invalid'));
+                    
+                    // 重置错误数组
+                    brazilValidation.errors = [];
+                    
+                    // 1. 检查是否为空
+                    if (!documentValue.trim()) {
+                        console.log('❌ 全局验证: 文档字段为空');
+                        brazilValidation.errors.push('CPF ou CNPJ é obrigatório para endereços brasileiros.');
+                        brazilValidation.showErrors();
+                        return false;
+                    }
+                    
+                    // 2. 检查字段是否已经标记为无效
+                    if (documentField.hasClass('brazil-field-invalid')) {
+                        console.log('❌ 全局验证: 字段已标记为无效');
+                        brazilValidation.errors.push('CPF ou CNPJ inválido. Verifique o número digitado.');
+                        brazilValidation.showErrors();
+                        return false;
+                    }
+                    
+                    // 3. 执行完整的文档验证（双重检查）
+                    var isValidDoc = brazilValidation.validateDocument(documentValue);
+                    console.log('📋 全局验证: 文档验证结果:', isValidDoc);
+                    
+                    if (!isValidDoc) {
+                        console.log('❌ 全局验证: 文档格式无效');
+                        brazilValidation.errors.push('CPF ou CNPJ inválido. Verifique o número digitado.');
+                        brazilValidation.showErrors();
+                        return false;
+                    }
+                    
+                    console.log('✅ 全局验证: 验证通过');
+                    brazilValidation.errors = [];
+                    brazilValidation.hideErrors();
+                    return true;
                 };
                 
                 // 拦截表单提交 - 使用多种方法
                 $(document).on('submit', 'form', function(e) {
-                    console.log('表单提交拦截 - 验证巴西字段');
-                    if (!window.validateBrazilFields()) {
-                        console.log('巴西字段验证失败，阻止提交');
+                    console.log('📝 表单提交拦截 - 验证巴西字段');
+                    
+                    // 首先执行最终验证，确保字段状态是最新的
+                    var documentField = $('#brazil_document');
+                    var currentValue = documentField.val() || '';
+                    
+                    // 检查是否需要巴西验证
+                    var isBrazilSelected = brazilValidation.isBrazilCountrySelected();
+                    var brazilPanel = $('.brazil-checkout-fields');
+                    var panelVisible = brazilPanel.length > 0 && (brazilPanel.is(':visible') || brazilPanel.hasClass('brazil-visible'));
+                    
+                    if (isBrazilSelected && panelVisible) {
+                        console.log('🔍 表单提交时执行最终文档验证:', currentValue);
+                        
+                        // 清除之前的验证状态
+                        documentField.removeClass('brazil-field-invalid brazil-field-valid');
+                        
+                        if (currentValue.trim()) {
+                            // 执行最终验证并更新字段状态
+                            var documentType = brazilValidation.detectDocumentType(currentValue);
+                            var isValidDocument = false;
+                            
+                            if (documentType === 'cpf') {
+                                isValidDocument = brazilValidation.validateCPF(currentValue);
+                            } else {
+                                isValidDocument = brazilValidation.validateCNPJ(currentValue);
+                            }
+                            
+                            // 更新字段状态
+                            if (isValidDocument) {
+                                documentField.addClass('brazil-field-valid');
+                                console.log('🟢 最终验证: 文档有效');
+                            } else {
+                                documentField.addClass('brazil-field-invalid');
+                                console.log('🔴 最终验证: 文档无效');
+                            }
+                        } else {
+                            // 空值情况，直接标记为无效
+                            console.log('🔴 最终验证: 文档为空');
+                        }
+                    }
+                    
+                    var isValid = window.validateBrazilFields();
+                    if (!isValid) {
+                        console.log('🛑 巴西字段验证失败，阻止提交');
                         e.preventDefault();
                         e.stopPropagation();
                         e.stopImmediatePropagation();
+                        
+                        // 显示错误摘要
+                        brazilValidation.showErrors();
+                        
+                        // 滚动到错误位置
+                        var brazilPanel = $('.brazil-checkout-fields');
+                        if (brazilPanel.length > 0) {
+                            $('html, body').animate({
+                                scrollTop: brazilPanel.offset().top - 100
+                            }, 500);
+                        }
+                        
                         return false;
                     }
-                    console.log('巴西字段验证通过');
+                    console.log('✅ 巴西字段验证通过');
                 });
                 
-                // 拦截所有按钮点击
-                $(document).on('click', 'button[type="submit"], input[type="submit"], .wc-block-components-checkout-place-order-button', function(e) {
-                    console.log('提交按钮点击拦截');
-                    if (!window.validateBrazilFields()) {
-                        console.log('阻止按钮提交');
+                // 拦截所有按钮点击 - 扩展选择器以包含更多WooCommerce块编辑器按钮
+                $(document).on('click', 'button[type="submit"], input[type="submit"], .wc-block-components-checkout-place-order-button, .wc-block-checkout__place-order-button, [class*="place-order"], [class*="checkout-place-order"], button[class*="place-order"], button[aria-label*="Place order"], button[aria-label*="下单"], button:contains("Place order"), button:contains("下单")', function(e) {
+                    console.log('🖱️ 提交按钮点击拦截:', $(this).attr('class') || 'unknown', '按钮文本:', $(this).text().trim());
+                    
+                    // 首先执行最终验证，确保字段状态是最新的
+                    var documentField = $('#brazil_document');
+                    var currentValue = documentField.val() || '';
+                    
+                    // 检查是否需要巴西验证
+                    var isBrazilSelected = brazilValidation.isBrazilCountrySelected();
+                    var brazilPanel = $('.brazil-checkout-fields');
+                    var panelVisible = brazilPanel.length > 0 && (brazilPanel.is(':visible') || brazilPanel.hasClass('brazil-visible'));
+                    
+                    if (isBrazilSelected && panelVisible) {
+                        console.log('🔍 按钮点击时执行最终文档验证:', currentValue);
+                        
+                        // 清除之前的验证状态
+                        documentField.removeClass('brazil-field-invalid brazil-field-valid');
+                        
+                        if (currentValue.trim()) {
+                            // 执行最终验证并更新字段状态
+                            var documentType = brazilValidation.detectDocumentType(currentValue);
+                            var isValidDocument = false;
+                            
+                            if (documentType === 'cpf') {
+                                isValidDocument = brazilValidation.validateCPF(currentValue);
+                            } else {
+                                isValidDocument = brazilValidation.validateCNPJ(currentValue);
+                            }
+                            
+                            // 更新字段状态
+                            if (isValidDocument) {
+                                documentField.addClass('brazil-field-valid');
+                                console.log('🟢 最终验证: 文档有效');
+                            } else {
+                                documentField.addClass('brazil-field-invalid');
+                                console.log('🔴 最终验证: 文档无效');
+                            }
+                        } else {
+                            // 空值情况，直接标记为无效
+                            console.log('🔴 最终验证: 文档为空');
+                        }
+                    }
+                    
+                    var isValid = window.validateBrazilFields();
+                    if (!isValid) {
+                        console.log('🛑 按钮点击验证失败，阻止提交');
                         e.preventDefault();
                         e.stopPropagation();
                         e.stopImmediatePropagation();
+                        
+                        // 显示错误摘要
+                        brazilValidation.showErrors();
+                        
+                        // 聚焦到错误字段并滚动
+                        var brazilPanel = $('.brazil-checkout-fields');
+                        if (brazilPanel.length > 0) {
+                            var documentField = $('#brazil_document');
+                            if (documentField.length > 0) {
+                                documentField.focus();
+                            }
+                            $('html, body').animate({
+                                scrollTop: brazilPanel.offset().top - 100
+                            }, 500);
+                        }
+                        
                         return false;
                     }
+                    console.log('✅ 按钮点击验证通过');
                 });
                 
                 // 监听WooCommerce特定事件
-                $(document.body).on('checkout_place_order', function() {
-                    console.log('checkout_place_order 事件触发');
-                    return window.validateBrazilFields();
+                $(document.body).on('checkout_place_order', function(e) {
+                    console.log('🛒 checkout_place_order 事件触发');
+                    
+                    // 首先执行最终验证，确保字段状态是最新的
+                    var documentField = $('#brazil_document');
+                    var currentValue = documentField.val() || '';
+                    
+                    // 检查是否需要巴西验证
+                    var isBrazilSelected = brazilValidation.isBrazilCountrySelected();
+                    var brazilPanel = $('.brazil-checkout-fields');
+                    var panelVisible = brazilPanel.length > 0 && (brazilPanel.is(':visible') || brazilPanel.hasClass('brazil-visible'));
+                    
+                    if (isBrazilSelected && panelVisible) {
+                        console.log('🔍 WooCommerce事件时执行最终文档验证:', currentValue);
+                        
+                        // 清除之前的验证状态
+                        documentField.removeClass('brazil-field-invalid brazil-field-valid');
+                        
+                        if (currentValue.trim()) {
+                            // 执行最终验证并更新字段状态
+                            var documentType = brazilValidation.detectDocumentType(currentValue);
+                            var isValidDocument = false;
+                            
+                            if (documentType === 'cpf') {
+                                isValidDocument = brazilValidation.validateCPF(currentValue);
+                            } else {
+                                isValidDocument = brazilValidation.validateCNPJ(currentValue);
+                            }
+                            
+                            // 更新字段状态
+                            if (isValidDocument) {
+                                documentField.addClass('brazil-field-valid');
+                                console.log('🟢 最终验证: 文档有效');
+                            } else {
+                                documentField.addClass('brazil-field-invalid');
+                                console.log('🔴 最终验证: 文档无效');
+                            }
+                        } else {
+                            // 空值情况，直接标记为无效
+                            console.log('🔴 最终验证: 文档为空');
+                        }
+                    }
+                    
+                    var isValid = window.validateBrazilFields();
+                    if (!isValid) {
+                        console.log('🛑 checkout_place_order 验证失败');
+                        brazilValidation.showErrors();
+                        // 对于WooCommerce事件，我们需要阻止事件传播
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                    return isValid;
                 });
                 
                 // 使用MutationObserver监听DOM变化，确保验证函数绑定到新的按钮
                 var observer = new MutationObserver(function(mutations) {
                     mutations.forEach(function(mutation) {
                         if (mutation.addedNodes.length > 0) {
-                            $(mutation.addedNodes).find('button[type="submit"], .wc-block-components-checkout-place-order-button').each(function() {
-                                $(this).off('click.brazil-validation').on('click.brazil-validation', function(e) {
-                                    console.log('新按钮点击拦截');
-                                    if (!window.validateBrazilFields()) {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        e.stopImmediatePropagation();
-                                        return false;
-                                    }
-                                });
+                            // 为新添加的提交按钮绑定验证 - 扩展选择器
+                            $(mutation.addedNodes).find('button[type="submit"], .wc-block-components-checkout-place-order-button, .wc-block-checkout__place-order-button, [class*="place-order"], [class*="checkout-place-order"], button[class*="place-order"], button[aria-label*="Place order"], button[aria-label*="下单"]').each(function() {
+                                var $btn = $(this);
+                                if (!$btn.data('brazil-validation-bound')) {
+                                    console.log('🆕 绑定新按钮验证:', $btn.attr('class') || 'unknown');
+                                    $btn.data('brazil-validation-bound', true);
+                                    $btn.on('click.brazil-validation', function(e) {
+                                        console.log('🖱️ 动态按钮点击拦截');
+                                        
+                                        // 首先执行最终验证，确保字段状态是最新的
+                                        var documentField = $('#brazil_document');
+                                        var currentValue = documentField.val() || '';
+                                        
+                                        // 检查是否需要巴西验证
+                                        var isBrazilSelected = brazilValidation.isBrazilCountrySelected();
+                                        var brazilPanel = $('.brazil-checkout-fields');
+                                        var panelVisible = brazilPanel.length > 0 && (brazilPanel.is(':visible') || brazilPanel.hasClass('brazil-visible'));
+                                        
+                                        if (isBrazilSelected && panelVisible) {
+                                            console.log('🔍 动态按钮点击时执行最终文档验证:', currentValue);
+                                            
+                                            // 清除之前的验证状态
+                                            documentField.removeClass('brazil-field-invalid brazil-field-valid');
+                                            
+                                            if (currentValue.trim()) {
+                                                // 执行最终验证并更新字段状态
+                                                var documentType = brazilValidation.detectDocumentType(currentValue);
+                                                var isValidDocument = false;
+                                                
+                                                if (documentType === 'cpf') {
+                                                    isValidDocument = brazilValidation.validateCPF(currentValue);
+                                                } else {
+                                                    isValidDocument = brazilValidation.validateCNPJ(currentValue);
+                                                }
+                                                
+                                                // 更新字段状态
+                                                if (isValidDocument) {
+                                                    documentField.addClass('brazil-field-valid');
+                                                    console.log('🟢 最终验证: 文档有效');
+                                                } else {
+                                                    documentField.addClass('brazil-field-invalid');
+                                                    console.log('� 最终验证: 文档无效');
+                                                }
+                                            } else {
+                                                // 空值情况，直接标记为无效
+                                                console.log('🔴 最终验证: 文档为空');
+                                            }
+                                        }
+                                        
+                                        var isValid = window.validateBrazilFields();
+                                        if (!isValid) {
+                                            console.log('🛑 动态按钮验证失败');
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            e.stopImmediatePropagation();
+                                            brazilValidation.showErrors();
+                                            return false;
+                                        }
+                                        return true;
+                                    });
+                                }
                             });
                         }
                     });
@@ -684,6 +1156,182 @@ class Brazil_Checkout_Fields_Blocks {
                 });
                 
                 console.log('验证监听器已设置');
+                
+                // 额外的按钮检测和绑定机制
+                function bindSubmitButtons() {
+                    var submitButtonSelectors = [
+                        'button[type="submit"]',
+                        '.wc-block-components-checkout-place-order-button',
+                        '.wc-block-checkout__place-order-button',
+                        '[class*="place-order"]',
+                        '[class*="checkout-place-order"]',
+                        'button[class*="place-order"]',
+                        'button[aria-label*="Place order"]',
+                        'button[aria-label*="下单"]'
+                    ];
+                    
+                    submitButtonSelectors.forEach(function(selector) {
+                        $(selector).each(function() {
+                            var $btn = $(this);
+                            if (!$btn.data('brazil-validation-bound')) {
+                                console.log('🔗 主动绑定提交按钮:', selector, '按钮类:', $btn.attr('class') || 'none', '按钮文本:', $btn.text().trim());
+                                $btn.data('brazil-validation-bound', true);
+                                $btn.on('click.brazil-validation', function(e) {
+                                    console.log('🖱️ 主动绑定按钮点击拦截');
+                                    
+                                    // 首先执行最终验证，确保字段状态是最新的
+                                    var documentField = $('#brazil_document');
+                                    var currentValue = documentField.val() || '';
+                                    
+                                    // 检查是否需要巴西验证
+                                    var isBrazilSelected = brazilValidation.isBrazilCountrySelected();
+                                    var brazilPanel = $('.brazil-checkout-fields');
+                                    var panelVisible = brazilPanel.length > 0 && (brazilPanel.is(':visible') || brazilPanel.hasClass('brazil-visible'));
+                                    
+                                    if (isBrazilSelected && panelVisible) {
+                                        console.log('🔍 主动绑定按钮点击时执行最终文档验证:', currentValue);
+                                        
+                                        // 清除之前的验证状态
+                                        documentField.removeClass('brazil-field-invalid brazil-field-valid');
+                                        
+                                        if (currentValue.trim()) {
+                                            // 执行最终验证并更新字段状态
+                                            var documentType = brazilValidation.detectDocumentType(currentValue);
+                                            var isValidDocument = false;
+                                            
+                                            if (documentType === 'cpf') {
+                                                isValidDocument = brazilValidation.validateCPF(currentValue);
+                                            } else {
+                                                isValidDocument = brazilValidation.validateCNPJ(currentValue);
+                                            }
+                                            
+                                            // 更新字段状态
+                                            if (isValidDocument) {
+                                                documentField.addClass('brazil-field-valid');
+                                                console.log('🟢 最终验证: 文档有效');
+                                            } else {
+                                                documentField.addClass('brazil-field-invalid');
+                                                console.log('🔴 最终验证: 文档无效');
+                                            }
+                                        } else {
+                                            // 空值情况，直接标记为无效
+                                            console.log('🔴 最终验证: 文档为空');
+                                        }
+                                    }
+                                    
+                                    var isValid = window.validateBrazilFields();
+                                    if (!isValid) {
+                                        console.log('🛑 主动绑定按钮验证失败');
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.stopImmediatePropagation();
+                                        brazilValidation.showErrors();
+                                        return false;
+                                    }
+                                    console.log('✅ 主动绑定按钮验证通过');
+                                    return true;
+                                });
+                            }
+                        });
+                    });
+                }
+                
+                // 定期检查和绑定按钮
+                setInterval(bindSubmitButtons, 2000);
+                
+                // 立即执行一次
+                setTimeout(bindSubmitButtons, 1000);
+                setTimeout(bindSubmitButtons, 3000);
+                setTimeout(bindSubmitButtons, 5000);
+                
+                // 添加全局点击监听器作为最后的后备
+                $(document).on('click', '*', function(e) {
+                    var $target = $(e.target);
+                    var isSubmitButton = false;
+                    
+                    // 检查是否是提交按钮
+                    if ($target.is('button') || $target.is('input[type="submit"]')) {
+                        var buttonText = $target.text().toLowerCase().trim();
+                        var buttonClass = $target.attr('class') || '';
+                        var buttonAriaLabel = $target.attr('aria-label') || '';
+                        
+                        if (buttonText.includes('place order') || 
+                            buttonText.includes('下单') || 
+                            buttonText.includes('submit') ||
+                            buttonText.includes('完成订单') ||
+                            buttonClass.includes('place-order') ||
+                            buttonClass.includes('checkout') ||
+                            buttonAriaLabel.includes('Place order') ||
+                            buttonAriaLabel.includes('下单')) {
+                            isSubmitButton = true;
+                        }
+                    }
+                    
+                    if (isSubmitButton && !$target.data('brazil-validation-checked')) {
+                        console.log('🎯 全局点击监听器捕获到提交按钮:', $target.attr('class') || 'none', '文本:', $target.text().trim());
+                        $target.data('brazil-validation-checked', true);
+                        
+                        // 检查是否需要巴西验证
+                        var isBrazilSelected = brazilValidation.isBrazilCountrySelected();
+                        var brazilPanel = $('.brazil-checkout-fields');
+                        var panelVisible = brazilPanel.length > 0 && (brazilPanel.is(':visible') || brazilPanel.hasClass('brazil-visible'));
+                        
+                        if (isBrazilSelected && panelVisible) {
+                            console.log('🔍 全局点击监听器执行最终文档验证');
+                            
+                            var documentField = $('#brazil_document');
+                            var currentValue = documentField.val() || '';
+                            
+                            // 清除之前的验证状态
+                            documentField.removeClass('brazil-field-invalid brazil-field-valid');
+                            
+                            if (currentValue.trim()) {
+                                // 执行最终验证并更新字段状态
+                                var documentType = brazilValidation.detectDocumentType(currentValue);
+                                var isValidDocument = false;
+                                
+                                if (documentType === 'cpf') {
+                                    isValidDocument = brazilValidation.validateCPF(currentValue);
+                                } else {
+                                    isValidDocument = brazilValidation.validateCNPJ(currentValue);
+                                }
+                                
+                                // 更新字段状态
+                                if (isValidDocument) {
+                                    documentField.addClass('brazil-field-valid');
+                                    console.log('🟢 全局验证: 文档有效');
+                                } else {
+                                    documentField.addClass('brazil-field-invalid');
+                                    console.log('🔴 全局验证: 文档无效');
+                                }
+                            } else {
+                                console.log('🔴 全局验证: 文档为空');
+                            }
+                            
+                            var isValid = window.validateBrazilFields();
+                            if (!isValid) {
+                                console.log('🛑 全局点击监听器验证失败，阻止提交');
+                                e.preventDefault();
+                                e.stopPropagation();
+                                e.stopImmediatePropagation();
+                                brazilValidation.showErrors();
+                                return false;
+                            }
+                            console.log('✅ 全局点击监听器验证通过');
+                        }
+                    }
+                });
+                
+                console.log('验证监听器已设置');
+                
+                // 确保验证函数在全局可用
+                setTimeout(function() {
+                    if (typeof window.validateBrazilFields === 'function') {
+                        console.log('✓ 巴西验证函数已正确注册');
+                    } else {
+                        console.error('✗ 巴西验证函数注册失败');
+                    }
+                }, 1000);
             }
             
             function validateDocumentReal(value, documentType) {
@@ -704,22 +1352,24 @@ class Brazil_Checkout_Fields_Blocks {
                     isValid = brazilValidation.validateCPF(value);
                     if (isValid) {
                         successContainer.text(brazil_checkout_ajax.messages.cpf_valid).show();
+                        field.addClass('brazil-field-valid');
+                        // 隐藏验证错误摘要
+                        brazilValidation.hideErrors();
                     } else {
                         errorContainer.text('CPF inválido').show();
+                        field.addClass('brazil-field-invalid');
                     }
                 } else if (documentType === 'cnpj') {
                     isValid = brazilValidation.validateCNPJ(value);
                     if (isValid) {
                         successContainer.text(brazil_checkout_ajax.messages.cnpj_valid).show();
+                        field.addClass('brazil-field-valid');
+                        // 隐藏验证错误摘要
+                        brazilValidation.hideErrors();
                     } else {
                         errorContainer.text('CNPJ inválido').show();
+                        field.addClass('brazil-field-invalid');
                     }
-                }
-                
-                if (isValid) {
-                    field.addClass('brazil-field-valid');
-                } else {
-                    field.addClass('brazil-field-invalid');
                 }
             }
             
@@ -788,6 +1438,18 @@ class Brazil_Checkout_Fields_Blocks {
     private function perform_validation($die_on_error = true) {
         $errors = array();
         
+        // 检查是否选择了巴西国家
+        $billing_country = isset($_POST['billing_country']) ? sanitize_text_field($_POST['billing_country']) : '';
+        $shipping_country = isset($_POST['shipping_country']) ? sanitize_text_field($_POST['shipping_country']) : '';
+        
+        // 如果不是巴西，跳过验证
+        if ($billing_country !== 'BR' && $shipping_country !== 'BR') {
+            error_log('Brazil Checkout: 不是巴西地址，跳过验证. Billing: ' . $billing_country . ', Shipping: ' . $shipping_country);
+            return $errors;
+        }
+        
+        error_log('Brazil Checkout: 检测到巴西地址，执行CPF/CNPJ验证');
+        
         // 检查新的统一文档字段
         $document = isset($_POST['brazil_document']) ? sanitize_text_field($_POST['brazil_document']) : '';
         
@@ -804,7 +1466,7 @@ class Brazil_Checkout_Fields_Blocks {
         error_log('Brazil Checkout: 验证文档: ' . $document);
         
         if (empty($document)) {
-            $errors[] = 'CPF ou CNPJ é obrigatório.';
+            $errors[] = 'CPF ou CNPJ é obrigatório para endereços brasileiros.';
         } else {
             $clean_document = preg_replace('/[^0-9]/', '', $document);
             
@@ -873,6 +1535,15 @@ class Brazil_Checkout_Fields_Blocks {
      * 保存结账字段数据
      */
     public function save_checkout_fields($order, $request) {
+        // 检查是否选择了巴西国家
+        $billing_country = isset($_POST['billing_country']) ? sanitize_text_field($_POST['billing_country']) : '';
+        $shipping_country = isset($_POST['shipping_country']) ? sanitize_text_field($_POST['shipping_country']) : '';
+        
+        // 如果不是巴西，不保存字段
+        if ($billing_country !== 'BR' && $shipping_country !== 'BR') {
+            return;
+        }
+        
         $document = isset($_POST['brazil_document']) ? sanitize_text_field($_POST['brazil_document']) : '';
         
         if (!empty($document)) {
@@ -909,6 +1580,15 @@ class Brazil_Checkout_Fields_Blocks {
      * 保存字段数据 - 后备方法
      */
     public function save_checkout_fields_fallback($order_id) {
+        // 检查是否选择了巴西国家
+        $billing_country = isset($_POST['billing_country']) ? sanitize_text_field($_POST['billing_country']) : '';
+        $shipping_country = isset($_POST['shipping_country']) ? sanitize_text_field($_POST['shipping_country']) : '';
+        
+        // 如果不是巴西，不保存字段
+        if ($billing_country !== 'BR' && $shipping_country !== 'BR') {
+            return;
+        }
+        
         $document = isset($_POST['brazil_document']) ? sanitize_text_field($_POST['brazil_document']) : '';
         
         if (!empty($document)) {
@@ -945,6 +1625,15 @@ class Brazil_Checkout_Fields_Blocks {
      * 保存字段数据 - 创建订单时
      */
     public function save_checkout_fields_create_order($order, $data) {
+        // 检查是否选择了巴西国家
+        $billing_country = isset($_POST['billing_country']) ? sanitize_text_field($_POST['billing_country']) : '';
+        $shipping_country = isset($_POST['shipping_country']) ? sanitize_text_field($_POST['shipping_country']) : '';
+        
+        // 如果不是巴西，不保存字段
+        if ($billing_country !== 'BR' && $shipping_country !== 'BR') {
+            return;
+        }
+        
         $document = isset($_POST['brazil_document']) ? sanitize_text_field($_POST['brazil_document']) : '';
         
         if (!empty($document)) {
