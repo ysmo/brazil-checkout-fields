@@ -98,8 +98,8 @@ msgid "Plugin Version"
 msgstr "Versão do Plugin"
 
 #: brazil-cpf-cnpj.php
-msgid "2.4.0 - Brazil CPF/CNPJ supports backend field name configuration"
-msgstr "2.4.0 - Brazil CPF/CNPJ suporta configuração de nome de campo no backend"
+msgid "Smart document detection and multilingual support for Brazil CPF/CNPJ validation plugin"
+msgstr "Plugin de validação Brasil CPF/CNPJ com detecção inteligente de documentos e suporte multilíngue"
 
 #: brazil-cpf-cnpj.php
 msgid "Save Settings"

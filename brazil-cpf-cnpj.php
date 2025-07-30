@@ -50,6 +50,17 @@ class Brazil_Checkout_Fields_Blocks {
         return self::$instance;
     }
     
+    /**
+     * 获取插件版本号
+     */
+    public function get_plugin_version() {
+        if (!function_exists('get_plugin_data')) {
+            require_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        $plugin_data = get_plugin_data(__FILE__);
+        return $plugin_data['Version'];
+    }
+    
     private function __construct() {
         add_action('plugins_loaded', array($this, 'init'));
     }
@@ -3724,7 +3735,7 @@ class Brazil_Checkout_Fields_Blocks {
                         </tr>
                         <tr>
                             <th scope="row"><?php _e('Plugin Version', 'brazil-checkout-fields'); ?></th>
-                            <td><?php _e('2.4.0 - Brazil CPF/CNPJ supports backend field name configuration', 'brazil-checkout-fields'); ?></td>
+                            <td><?php echo $this->get_plugin_version(); ?> - <?php _e('Brazil CPF/CNPJ with smart document detection and multi-language support', 'brazil-checkout-fields'); ?></td>
                         </tr>
                     </tbody>
                 </table>
@@ -5080,7 +5091,7 @@ class Brazil_Checkout_Fields_Blocks {
             echo '<ul>';
             echo '<li><strong>BRAZIL_CUSTOMER_TYPE_FIELD:</strong> <code>' . BRAZIL_CUSTOMER_TYPE_FIELD . '</code></li>';
             echo '<li><strong>BRAZIL_DOCUMENT_FIELD:</strong> <code>' . BRAZIL_DOCUMENT_FIELD . '</code></li>';
-            echo '<li><strong>' . __('Plugin Version:', 'brazil-checkout-fields') . '</strong> 2.4.0</li>';
+            echo '<li><strong>' . __('Plugin Version:', 'brazil-checkout-fields') . '</strong> ' . $this->get_plugin_version() . '</li>';
             echo '<li><strong>' . __('Storage Mode:', 'brazil-checkout-fields') . '</strong> ' . ($hpos_enabled ? 'HPOS (' . __('High-Performance Order Storage', 'brazil-checkout-fields') . ')' : 'Legacy (' . __('Legacy Post Storage', 'brazil-checkout-fields') . ')') . '</li>';
             echo '</ul>';
             
@@ -5117,6 +5128,6 @@ define('BRAZIL_DOCUMENT_FIELD', '_custom_document');
 - 文档字段: <?php echo BRAZIL_DOCUMENT_FIELD; ?>
 
 
-Brazil CPF/CNPJ Plugin v2.4.0
-支持WooCommerce块编辑器的巴西CPF/CNPJ智能验证系统
+Brazil Checkout Fields Plugin v1.0
+巴西CPF/CNPJ智能验证系统，支持WooCommerce块编辑器和多语言
 */

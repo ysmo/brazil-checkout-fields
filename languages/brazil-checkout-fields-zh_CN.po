@@ -109,8 +109,8 @@ msgid "Plugin Version"
 msgstr "插件版本"
 
 #: brazil-cpf-cnpj.php
-msgid "2.4.0 - Brazil CPF/CNPJ supports backend field name configuration"
-msgstr "2.4.0 - Brazil CPF/CNPJ 支持后台字段名称配置"
+msgid "Brazil CPF/CNPJ with smart document detection and multi-language support"
+msgstr "智能文档检测和多语言支持的巴西 CPF/CNPJ 验证插件"
 
 #: brazil-cpf-cnpj.php
 msgid "Save Settings"
@@ -535,10 +535,10 @@ msgstr "未知"
 #, fuzzy
 msgid "Storage Mode:"
 msgstr ""
-"#-#-#-#-#  brazil-checkout-fields-zh_CN.po (Brazil Checkout Fields 2.4.0)  #-"
+"#-#-#-#-#  brazil-checkout-fields-zh_CN.po (Brazil Checkout Fields 1.0)  #-"
 "#-#-#-#\n"
 "存储模式：\n"
-"#-#-#-#-#  brazil-checkout-fields-zh_CN.po (Brazil Checkout Fields 2.4.0)  #-"
+"#-#-#-#-#  brazil-checkout-fields-zh_CN.po (Brazil Checkout Fields 1.0)  #-"
 "#-#-#-#\n"
 "存储模式:"
 
