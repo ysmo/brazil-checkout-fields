@@ -72,12 +72,18 @@ class Brazil_Checkout_Fields_Blocks {
         // AJAX调试（仅管理员）
         add_action('wp_ajax_debug_brazil_order', array($this, 'debug_brazil_order_ajax'));
         
+        // AJAX预览迁移数据（仅管理员）
+        add_action('wp_ajax_brazil_preview_migration_data', array($this, 'ajax_preview_migration_data'));
+        
         // Store API扩展 - 让WooCommerce块编辑器识别我们的字段
         add_action('woocommerce_blocks_loaded', array($this, 'register_checkout_fields_block_support'));
         add_action('init', array($this, 'init_store_api_support'));
         
         // 确保在Store API请求前设置字段
         add_action('rest_api_init', array($this, 'register_store_api_fields'));
+        
+        // 注册additional_fields支持
+        add_action('woocommerce_init', array($this, 'register_additional_fields_support'));
         
         // 添加调试hook来监控所有Store API请求 - 仅在调试模式启用
         if (defined('WP_DEBUG') && WP_DEBUG && isset($_GET['brazil_debug'])) {
@@ -93,6 +99,9 @@ class Brazil_Checkout_Fields_Blocks {
         // 添加更多保存Hook来确保数据保存
         add_action('woocommerce_store_api_checkout_order_processed', array($this, 'store_api_order_processed'), 10, 1);
         add_filter('woocommerce_store_api_checkout_data', array($this, 'process_store_api_data'), 10, 2);
+        
+        // 直接拦截Store API请求数据
+        add_filter('rest_pre_dispatch', array($this, 'intercept_store_api_request'), 10, 3);
         
         // 额外的保存Hook - 确保所有情况都覆盖
         add_action('woocommerce_checkout_order_processed', array($this, 'save_checkout_fields_processed'), 10, 3);
@@ -129,6 +138,46 @@ class Brazil_Checkout_Fields_Blocks {
             add_action('wp_footer', array($this, 'add_debug_tools'));
             add_action('admin_menu', array($this, 'add_admin_menu'));
         }
+    }
+    
+    /**
+     * 获取CPF对应的客户类型值
+     */
+    private function get_cpf_customer_type_value() {
+        return get_option('brazil_checkout_cpf_value', 'pessoa_fisica');
+    }
+    
+    /**
+     * 获取CNPJ对应的客户类型值
+     */
+    private function get_cnpj_customer_type_value() {
+        return get_option('brazil_checkout_cnpj_value', 'pessoa_juridica');
+    }
+    
+    /**
+     * 根据文档类型获取客户类型值
+     */
+    private function get_customer_type_value_by_document_type($document_type) {
+        if ($document_type === 'cpf') {
+            return $this->get_cpf_customer_type_value();
+        } elseif ($document_type === 'cnpj') {
+            return $this->get_cnpj_customer_type_value();
+        }
+        return '';
+    }
+    
+    /**
+     * 判断客户类型值是否对应CPF
+     */
+    private function is_cpf_customer_type($customer_type) {
+        return $customer_type === $this->get_cpf_customer_type_value();
+    }
+    
+    /**
+     * 判断客户类型值是否对应CNPJ
+     */
+    private function is_cnpj_customer_type($customer_type) {
+        return $customer_type === $this->get_cnpj_customer_type_value();
     }
     
     /**
@@ -809,7 +858,7 @@ class Brazil_Checkout_Fields_Blocks {
                         hint = brazil_checkout_ajax.messages.document_hint_cpf;
                         
                         // 更新隐藏字段
-                        $('#brazil_customer_type').val('pessoa_fisica');
+                        $('#brazil_customer_type').val('<?php echo esc_js($this->get_cpf_customer_type_value()); ?>');
                         $('#brazil_cpf').val(formattedValue);
                         $('#brazil_cnpj').val('');
                     } else {
@@ -832,7 +881,7 @@ class Brazil_Checkout_Fields_Blocks {
                         hint = brazil_checkout_ajax.messages.document_hint_cnpj;
                         
                         // 更新隐藏字段
-                        $('#brazil_customer_type').val('pessoa_juridica');
+                        $('#brazil_customer_type').val('<?php echo esc_js($this->get_cnpj_customer_type_value()); ?>');
                         $('#brazil_cpf').val('');
                         $('#brazil_cnpj').val(formattedValue);
                     }
@@ -1522,11 +1571,11 @@ class Brazil_Checkout_Fields_Blocks {
                                 var documentType = brazilValidation.detectDocumentType(documentValue);
                                 if (documentType === 'cpf') {
                                     requestData.additional_fields.brazil_cpf = documentValue;
-                                    requestData.additional_fields.brazil_customer_type = 'pessoa_fisica';
+                                    requestData.additional_fields.brazil_customer_type = '<?php echo esc_js($this->get_cpf_customer_type_value()); ?>';
                                     requestData.additional_fields.brazil_cnpj = ''; // 确保CNPJ为空字符串
                                 } else {
                                     requestData.additional_fields.brazil_cnpj = documentValue;
-                                    requestData.additional_fields.brazil_customer_type = 'pessoa_juridica';
+                                    requestData.additional_fields.brazil_customer_type = '<?php echo esc_js($this->get_cnpj_customer_type_value()); ?>';
                                     requestData.additional_fields.brazil_cpf = ''; // 确保CPF为空字符串
                                 }
                                 
@@ -1652,9 +1701,9 @@ class Brazil_Checkout_Fields_Blocks {
         // 后备兼容性：检查旧字段
         if (empty($document)) {
             $customer_type = isset($_POST['brazil_customer_type']) ? sanitize_text_field($_POST['brazil_customer_type']) : '';
-            if ($customer_type === 'pessoa_fisica' && isset($_POST['brazil_cpf'])) {
+            if ($customer_type === $this->get_cpf_customer_type_value() && isset($_POST['brazil_cpf'])) {
                 $document = sanitize_text_field($_POST['brazil_cpf']);
-            } elseif ($customer_type === 'pessoa_juridica' && isset($_POST['brazil_cnpj'])) {
+            } elseif ($customer_type === $this->get_cnpj_customer_type_value() && isset($_POST['brazil_cnpj'])) {
                 $document = sanitize_text_field($_POST['brazil_cnpj']);
             }
         }
@@ -1815,23 +1864,42 @@ class Brazil_Checkout_Fields_Blocks {
         
         // 查找文档数据 - 检查多个可能的来源
         $document = '';
+        $customer_type = '';
         
         // 1. 检查Store API的additional_fields
-        if (isset($request_params['additional_fields']['brazil_document'])) {
+        if (isset($request_params['additional_fields']['brazil_document']) && !empty($request_params['additional_fields']['brazil_document'])) {
             $document = sanitize_text_field($request_params['additional_fields']['brazil_document']);
-            error_log('Brazil Checkout: Found document in additional_fields: ' . $document);
+            $customer_type = isset($request_params['additional_fields']['brazil_customer_type']) ? 
+                sanitize_text_field($request_params['additional_fields']['brazil_customer_type']) : '';
+            error_log('Brazil Checkout: Found document in additional_fields: ' . $document . ', customer_type: ' . $customer_type);
         }
         
-        // 2. 检查Store API的extensions
-        elseif (isset($request_params['extensions']['brazil-cpf-cnpj']['brazil_document'])) {
+        // 2. 检查Store API的extensions（多个可能的位置）
+        elseif (isset($request_params['extensions']['brazil-checkout-fields']['brazil_document']) && !empty($request_params['extensions']['brazil-checkout-fields']['brazil_document'])) {
+            $document = sanitize_text_field($request_params['extensions']['brazil-checkout-fields']['brazil_document']);
+            $customer_type = isset($request_params['extensions']['brazil-checkout-fields']['brazil_customer_type']) ? 
+                sanitize_text_field($request_params['extensions']['brazil-checkout-fields']['brazil_customer_type']) : '';
+            error_log('Brazil Checkout: Found document in extensions[brazil-checkout-fields]: ' . $document . ', customer_type: ' . $customer_type);
+        }
+        elseif (isset($request_params['extensions']['brazil-checkout']['brazil_document']) && !empty($request_params['extensions']['brazil-checkout']['brazil_document'])) {
+            $document = sanitize_text_field($request_params['extensions']['brazil-checkout']['brazil_document']);
+            $customer_type = isset($request_params['extensions']['brazil-checkout']['brazil_customer_type']) ? 
+                sanitize_text_field($request_params['extensions']['brazil-checkout']['brazil_customer_type']) : '';
+            error_log('Brazil Checkout: Found document in extensions[brazil-checkout]: ' . $document . ', customer_type: ' . $customer_type);
+        }
+        elseif (isset($request_params['extensions']['brazil-cpf-cnpj']['brazil_document']) && !empty($request_params['extensions']['brazil-cpf-cnpj']['brazil_document'])) {
             $document = sanitize_text_field($request_params['extensions']['brazil-cpf-cnpj']['brazil_document']);
-            error_log('Brazil CPF/CNPJ: Found document in extensions: ' . $document);
+            $customer_type = isset($request_params['extensions']['brazil-cpf-cnpj']['brazil_customer_type']) ? 
+                sanitize_text_field($request_params['extensions']['brazil-cpf-cnpj']['brazil_customer_type']) : '';
+            error_log('Brazil Checkout: Found document in extensions[brazil-cpf-cnpj]: ' . $document . ', customer_type: ' . $customer_type);
         }
         
         // 3. 检查直接的请求参数
-        elseif (isset($request_params['brazil_document'])) {
+        elseif (isset($request_params['brazil_document']) && !empty($request_params['brazil_document'])) {
             $document = sanitize_text_field($request_params['brazil_document']);
-            error_log('Brazil Checkout: Found document in request params: ' . $document);
+            $customer_type = isset($request_params['brazil_customer_type']) ? 
+                sanitize_text_field($request_params['brazil_customer_type']) : '';
+            error_log('Brazil Checkout: Found document in request params: ' . $document . ', customer_type: ' . $customer_type);
         }
         
         // 4. 检查POST数据
@@ -1854,12 +1922,21 @@ class Brazil_Checkout_Fields_Blocks {
             }
         }
         
-        // 5. 如果还是没找到，尝试从session获取
+        // 5. 如果还是没找到，尝试从拦截的session数据获取
         if (empty($document)) {
             if (!session_id()) {
                 session_start();
             }
-            if (isset($_SESSION['brazil_cpf_cnpj']) && !empty($_SESSION['brazil_cpf_cnpj'])) {
+            
+            // 检查拦截的数据
+            if (isset($_SESSION['brazil_intercepted_data']['brazil_document']) && !empty($_SESSION['brazil_intercepted_data']['brazil_document'])) {
+                $document = sanitize_text_field($_SESSION['brazil_intercepted_data']['brazil_document']);
+                $customer_type = isset($_SESSION['brazil_intercepted_data']['brazil_customer_type']) ? 
+                    sanitize_text_field($_SESSION['brazil_intercepted_data']['brazil_customer_type']) : '';
+                error_log('Brazil Checkout: Found document in intercepted data: ' . $document . ', customer_type: ' . $customer_type);
+            }
+            // 检查旧的session数据
+            elseif (isset($_SESSION['brazil_cpf_cnpj']) && !empty($_SESSION['brazil_cpf_cnpj'])) {
                 $document = sanitize_text_field($_SESSION['brazil_cpf_cnpj']);
                 error_log('Brazil Checkout: Found document in session: ' . $document);
             }
@@ -1869,16 +1946,26 @@ class Brazil_Checkout_Fields_Blocks {
             $clean_document = preg_replace('/[^0-9]/', '', $document);
             error_log('Brazil Checkout: Clean document: ' . $clean_document . ' (length: ' . strlen($clean_document) . ')');
             
+            // 如果没有提供customer_type，根据文档长度推断
+            if (empty($customer_type)) {
+                if (strlen($clean_document) === 11) {
+                    $customer_type = $this->get_cpf_customer_type_value();
+                } elseif (strlen($clean_document) === 14) {
+                    $customer_type = $this->get_cnpj_customer_type_value();
+                }
+                error_log('Brazil Checkout: Auto-detected customer_type: ' . $customer_type);
+            }
+            
             if (strlen($clean_document) === 11) {
-                // CPF - 只保留核心字段
+                // CPF - 保存核心字段
                 error_log('Brazil Checkout: Saving CPF data for order ' . $order_id);
-                $order->update_meta_data(BRAZIL_CUSTOMER_TYPE_FIELD, 'pessoa_fisica');
+                $order->update_meta_data(BRAZIL_CUSTOMER_TYPE_FIELD, $customer_type ?: $this->get_cpf_customer_type_value());
                 $order->update_meta_data(BRAZIL_DOCUMENT_FIELD, $document);
                 
             } elseif (strlen($clean_document) === 14) {
-                // CNPJ - 只保留核心字段
+                // CNPJ - 保存核心字段
                 error_log('Brazil Checkout: Saving CNPJ data for order ' . $order_id);
-                $order->update_meta_data(BRAZIL_CUSTOMER_TYPE_FIELD, 'pessoa_juridica');
+                $order->update_meta_data(BRAZIL_CUSTOMER_TYPE_FIELD, $customer_type ?: $this->get_cnpj_customer_type_value());
                 $order->update_meta_data(BRAZIL_DOCUMENT_FIELD, $document);
                 
             } else {
@@ -1892,6 +1979,9 @@ class Brazil_Checkout_Fields_Blocks {
             // 清理session数据
             if (isset($_SESSION['brazil_cpf_cnpj'])) {
                 unset($_SESSION['brazil_cpf_cnpj'], $_SESSION['brazil_billing_country'], $_SESSION['brazil_data_timestamp']);
+            }
+            if (isset($_SESSION['brazil_intercepted_data'])) {
+                unset($_SESSION['brazil_intercepted_data']);
             }
             
         } else {
@@ -1952,12 +2042,12 @@ class Brazil_Checkout_Fields_Blocks {
             if (strlen($clean_document) === 11) {
                 // CPF - 只保留核心字段
                 error_log('Brazil Checkout: Saving CPF data via update_post_meta');
-                update_post_meta($order_id, BRAZIL_CUSTOMER_TYPE_FIELD, 'pessoa_fisica');
+                update_post_meta($order_id, BRAZIL_CUSTOMER_TYPE_FIELD, $this->get_cpf_customer_type_value());
                 update_post_meta($order_id, BRAZIL_DOCUMENT_FIELD, $document);
             } elseif (strlen($clean_document) === 14) {
                 // CNPJ - 只保留核心字段
                 error_log('Brazil Checkout: Saving CNPJ data via update_post_meta');
-                update_post_meta($order_id, BRAZIL_CUSTOMER_TYPE_FIELD, 'pessoa_juridica');
+                update_post_meta($order_id, BRAZIL_CUSTOMER_TYPE_FIELD, $this->get_cnpj_customer_type_value());
                 update_post_meta($order_id, BRAZIL_DOCUMENT_FIELD, $document);
             } else {
                 error_log('Brazil Checkout: Invalid document length: ' . strlen($clean_document));
@@ -2003,11 +2093,11 @@ class Brazil_Checkout_Fields_Blocks {
             
             if (strlen($clean_document) === 11) {
                 // CPF - 只保留核心字段
-                $order->update_meta_data(BRAZIL_CUSTOMER_TYPE_FIELD, 'pessoa_fisica');
+                $order->update_meta_data(BRAZIL_CUSTOMER_TYPE_FIELD, $this->get_cpf_customer_type_value());
                 $order->update_meta_data(BRAZIL_DOCUMENT_FIELD, $document);
             } elseif (strlen($clean_document) === 14) {
                 // CNPJ - 只保留核心字段
-                $order->update_meta_data(BRAZIL_CUSTOMER_TYPE_FIELD, 'pessoa_juridica');
+                $order->update_meta_data(BRAZIL_CUSTOMER_TYPE_FIELD, $this->get_cnpj_customer_type_value());
                 $order->update_meta_data(BRAZIL_DOCUMENT_FIELD, $document);
             }
         }
@@ -2410,9 +2500,9 @@ class Brazil_Checkout_Fields_Blocks {
             
             // 根据客户类型确定文档类型
             $document_type = '';
-            if ($customer_type === 'pessoa_fisica') {
+            if ($this->is_cpf_customer_type($customer_type)) {
                 $document_type = 'cpf';
-            } elseif ($customer_type === 'pessoa_juridica') {
+            } elseif ($this->is_cnpj_customer_type($customer_type)) {
                 $document_type = 'cnpj';
             } else {
                 // 尝试自动检测
@@ -2438,9 +2528,9 @@ class Brazil_Checkout_Fields_Blocks {
             // 如果没有类型，尝试从customer_type获取
             if (empty($legacy_document_type)) {
                 $legacy_customer_type = $order->get_meta('_brazil_customer_type');
-                if ($legacy_customer_type === 'pessoa_fisica') {
+                if ($this->is_cpf_customer_type($legacy_customer_type)) {
                     $legacy_document_type = 'cpf';
-                } elseif ($legacy_customer_type === 'pessoa_juridica') {
+                } elseif ($this->is_cnpj_customer_type($legacy_customer_type)) {
                     $legacy_document_type = 'cnpj';
                 } else {
                     // 尝试自动检测
@@ -2468,7 +2558,7 @@ class Brazil_Checkout_Fields_Blocks {
             return array(
                 'document' => $billing_cpf,
                 'type' => 'cpf',
-                'customer_type' => 'pessoa_fisica'
+                'customer_type' => $this->get_cpf_customer_type_value()
             );
         }
         
@@ -2477,7 +2567,7 @@ class Brazil_Checkout_Fields_Blocks {
             return array(
                 'document' => $billing_cnpj,
                 'type' => 'cnpj',
-                'customer_type' => 'pessoa_juridica'
+                'customer_type' => $this->get_cnpj_customer_type_value()
             );
         }
         
@@ -2488,19 +2578,19 @@ class Brazil_Checkout_Fields_Blocks {
         
         error_log('Brazil Checkout: Old format fields - Customer Type: ' . $customer_type . ', CPF: ' . $cpf . ', CNPJ: ' . $cnpj);
         
-        if ($customer_type === 'pessoa_fisica' && $cpf) {
+        if ($this->is_cpf_customer_type($customer_type) && $cpf) {
             error_log('Brazil Checkout: ✅ Found old format CPF data');
             return array(
                 'document' => $cpf,
                 'type' => 'cpf',
-                'customer_type' => 'pessoa_fisica'
+                'customer_type' => $this->get_cpf_customer_type_value()
             );
-        } elseif ($customer_type === 'pessoa_juridica' && $cnpj) {
+        } elseif ($this->is_cnpj_customer_type($customer_type) && $cnpj) {
             error_log('Brazil Checkout: ✅ Found old format CNPJ data');
             return array(
                 'document' => $cnpj,
                 'type' => 'cnpj',
-                'customer_type' => 'pessoa_juridica'
+                'customer_type' => $this->get_cnpj_customer_type_value()
             );
         }
         
@@ -2512,7 +2602,7 @@ class Brazil_Checkout_Fields_Blocks {
             return array(
                 'document' => $document_no_prefix,
                 'type' => $detected_type,
-                'customer_type' => $detected_type === 'cpf' ? 'pessoa_fisica' : 'pessoa_juridica'
+                'customer_type' => $detected_type === 'cpf' ? $this->get_cpf_customer_type_value() : $this->get_cnpj_customer_type_value()
             );
         }
         
@@ -2606,6 +2696,110 @@ class Brazil_Checkout_Fields_Blocks {
     }
     
     /**
+     * AJAX预览迁移数据
+     */
+    public function ajax_preview_migration_data() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('权限不足');
+            return;
+        }
+        
+        check_ajax_referer('brazil_preview_migration', 'nonce');
+        
+        try {
+            $customer_type_field = BRAZIL_CUSTOMER_TYPE_FIELD;
+            $hpos_enabled = $this->detect_hpos_mode();
+            
+            if ($hpos_enabled) {
+                $data = $this->get_migration_preview_hpos($customer_type_field);
+            } else {
+                $data = $this->get_migration_preview_legacy($customer_type_field);
+            }
+            
+            $html = '<div class="migration-preview">';
+            $html .= '<h4>📈 当前客户类型值分布</h4>';
+            $html .= '<table class="wp-list-table widefat fixed striped">';
+            $html .= '<thead><tr><th>字段名</th><th>客户类型值</th><th>订单数量</th><th>文档类型</th></tr></thead>';
+            $html .= '<tbody>';
+            
+            if (empty($data)) {
+                $html .= '<tr><td colspan="4" style="text-align: center; color: #666;">暂无数据</td></tr>';
+            } else {
+                foreach ($data as $row) {
+                    $document_type = '';
+                    if ($row['customer_type'] === get_option('brazil_checkout_cpf_value', 'pessoa_fisica')) {
+                        $document_type = 'CPF (个人)';
+                    } elseif ($row['customer_type'] === get_option('brazil_checkout_cnpj_value', 'pessoa_juridica')) {
+                        $document_type = 'CNPJ (企业)';
+                    } elseif ($row['customer_type'] === 'pessoa_fisica') {
+                        $document_type = 'CPF (默认)';
+                    } elseif ($row['customer_type'] === 'pessoa_juridica') {
+                        $document_type = 'CNPJ (默认)';
+                    } else {
+                        $document_type = '未知';
+                    }
+                    
+                    $html .= '<tr>';
+                    $html .= '<td><code>' . esc_html($row['field']) . '</code></td>';
+                    $html .= '<td><strong>' . esc_html($row['customer_type']) . '</strong></td>';
+                    $html .= '<td>' . number_format($row['count']) . '</td>';
+                    $html .= '<td>' . $document_type . '</td>';
+                    $html .= '</tr>';
+                }
+            }
+            
+            $html .= '</tbody></table>';
+            $html .= '<p style="margin-top: 15px; font-size: 12px; color: #666;">';
+            $html .= '存储模式：' . ($hpos_enabled ? 'HPOS (高性能订单存储)' : 'Legacy (传统文章存储)');
+            $html .= '</p>';
+            $html .= '</div>';
+            
+            wp_send_json_success($html);
+            
+        } catch (Exception $e) {
+            wp_send_json_error('预览数据时发生错误：' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * HPOS模式下获取迁移预览数据
+     */
+    private function get_migration_preview_hpos($customer_type_field) {
+        global $wpdb;
+        
+        $orders_meta_table = $wpdb->prefix . 'wc_orders_meta';
+        
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT meta_key as field, meta_value as customer_type, COUNT(*) as count
+            FROM {$orders_meta_table} 
+            WHERE meta_key IN (%s, '_customer_type') 
+            AND meta_value != ''
+            GROUP BY meta_key, meta_value
+            ORDER BY meta_key, count DESC
+        ", $customer_type_field), ARRAY_A);
+        
+        return $results ?: array();
+    }
+    
+    /**
+     * 传统模式下获取迁移预览数据
+     */
+    private function get_migration_preview_legacy($customer_type_field) {
+        global $wpdb;
+        
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT meta_key as field, meta_value as customer_type, COUNT(*) as count
+            FROM {$wpdb->postmeta} 
+            WHERE meta_key IN (%s, '_customer_type') 
+            AND meta_value != ''
+            GROUP BY meta_key, meta_value
+            ORDER BY meta_key, count DESC
+        ", $customer_type_field), ARRAY_A);
+        
+        return $results ?: array();
+    }
+    
+    /**
      * Store API订单处理完成时的保存函数
      */
     public function store_api_order_processed($order) {
@@ -2681,7 +2875,7 @@ class Brazil_Checkout_Fields_Blocks {
         if (strlen($clean_document) === 11) {
             // CPF
             error_log('Brazil Checkout: Saving CPF to order ' . $order_id);
-            $order->update_meta_data('_customer_type', 'pessoa_fisica');
+            $order->update_meta_data('_customer_type', $this->get_cpf_customer_type_value());
             $order->update_meta_data('_cpf', $document);
             $order->update_meta_data('_brazil_document', $document);
             $order->update_meta_data('_brazil_document_type', 'cpf');
@@ -2693,7 +2887,7 @@ class Brazil_Checkout_Fields_Blocks {
         } elseif (strlen($clean_document) === 14) {
             // CNPJ
             error_log('Brazil Checkout: Saving CNPJ to order ' . $order_id);
-            $order->update_meta_data('_customer_type', 'pessoa_juridica');
+            $order->update_meta_data('_customer_type', $this->get_cnpj_customer_type_value());
             $order->update_meta_data('_cnpj', $document);
             $order->update_meta_data('_brazil_document', $document);
             $order->update_meta_data('_brazil_document_type', 'cnpj');
@@ -2888,7 +3082,7 @@ class Brazil_Checkout_Fields_Blocks {
             // CPF - 只保留核心字段
             error_log('Brazil Checkout: Saving unified CPF data for order ' . $order_id);
             update_post_meta($order_id, BRAZIL_DOCUMENT_FIELD, $document);
-            update_post_meta($order_id, BRAZIL_CUSTOMER_TYPE_FIELD, 'pessoa_fisica');
+            update_post_meta($order_id, BRAZIL_CUSTOMER_TYPE_FIELD, $this->get_cpf_customer_type_value());
             
             // 清理session数据
             unset($_SESSION['brazil_cpf_cnpj'], $_SESSION['brazil_billing_country'], $_SESSION['brazil_data_timestamp']);
@@ -2899,7 +3093,7 @@ class Brazil_Checkout_Fields_Blocks {
             // CNPJ - 只保留核心字段
             error_log('Brazil Checkout: Saving unified CNPJ data for order ' . $order_id);
             update_post_meta($order_id, BRAZIL_DOCUMENT_FIELD, $document);
-            update_post_meta($order_id, BRAZIL_CUSTOMER_TYPE_FIELD, 'pessoa_juridica');
+            update_post_meta($order_id, BRAZIL_CUSTOMER_TYPE_FIELD, $this->get_cnpj_customer_type_value());
             
             // 清理session数据
             unset($_SESSION['brazil_cpf_cnpj'], $_SESSION['brazil_billing_country'], $_SESSION['brazil_data_timestamp']);
@@ -3030,6 +3224,136 @@ class Brazil_Checkout_Fields_Blocks {
     }
     
     /**
+     * 注册additional_fields支持
+     */
+    public function register_additional_fields_support() {
+        // 使用 WooCommerce Store API 注册 additional_fields
+        if (function_exists('woocommerce_store_api_register_endpoint_data')) {
+            woocommerce_store_api_register_endpoint_data(array(
+                'endpoint' => \Automattic\WooCommerce\StoreApi\Schemas\V1\CheckoutSchema::IDENTIFIER,
+                'namespace' => 'brazil-checkout-additional',
+                'data_callback' => array($this, 'additional_fields_data_callback'),
+                'schema_callback' => array($this, 'additional_fields_schema_callback'),
+                'schema_type' => ARRAY_A,
+            ));
+        }
+        
+        // 另一种注册方法 - 使用过滤器
+        add_filter('woocommerce_store_api_checkout_schema', array($this, 'extend_checkout_schema'));
+        add_filter('woocommerce_store_api_checkout_additional_fields_schema', array($this, 'add_additional_fields_schema'));
+    }
+    
+    /**
+     * 扩展 checkout schema
+     */
+    public function extend_checkout_schema($schema) {
+        if (!isset($schema['properties']['additional_fields'])) {
+            $schema['properties']['additional_fields'] = array(
+                'type' => 'object',
+                'properties' => array(),
+            );
+        }
+        
+        $schema['properties']['additional_fields']['properties']['brazil_document'] = array(
+            'type' => 'string',
+            'description' => 'Brazil document (CPF or CNPJ)',
+            'default' => '',
+        );
+        
+        $schema['properties']['additional_fields']['properties']['brazil_customer_type'] = array(
+            'type' => 'string',
+            'description' => 'Brazil customer type',
+            'default' => '',
+        );
+        
+        $schema['properties']['additional_fields']['properties']['brazil_cpf'] = array(
+            'type' => 'string',
+            'description' => 'Brazil CPF',
+            'default' => '',
+        );
+        
+        $schema['properties']['additional_fields']['properties']['brazil_cnpj'] = array(
+            'type' => 'string',
+            'description' => 'Brazil CNPJ',
+            'default' => '',
+        );
+        
+        return $schema;
+    }
+    
+    /**
+     * 添加 additional_fields schema
+     */
+    public function add_additional_fields_schema($schema) {
+        return array_merge($schema, array(
+            'brazil_document' => array(
+                'type' => 'string',
+                'description' => 'Brazil document (CPF or CNPJ)',
+                'default' => '',
+            ),
+            'brazil_customer_type' => array(
+                'type' => 'string',
+                'description' => 'Brazil customer type',
+                'default' => '',
+            ),
+            'brazil_cpf' => array(
+                'type' => 'string',
+                'description' => 'Brazil CPF',
+                'default' => '',
+            ),
+            'brazil_cnpj' => array(
+                'type' => 'string',
+                'description' => 'Brazil CNPJ',
+                'default' => '',
+            ),
+        ));
+    }
+    
+    /**
+     * Additional fields数据回调
+     */
+    public function additional_fields_data_callback() {
+        return array(
+            'brazil_document' => '',
+            'brazil_customer_type' => '',
+            'brazil_cpf' => '',
+            'brazil_cnpj' => '',
+        );
+    }
+    
+    /**
+     * Additional fields架构回调
+     */
+    public function additional_fields_schema_callback() {
+        return array(
+            'brazil_document' => array(
+                'description' => 'Brazil document (CPF or CNPJ)',
+                'type' => 'string',
+                'context' => array('view', 'edit'),
+                'default' => '',
+            ),
+            'brazil_customer_type' => array(
+                'description' => 'Brazil customer type',
+                'type' => 'string',
+                'context' => array('view', 'edit'),
+                'default' => '',
+            ),
+            'brazil_cpf' => array(
+                'description' => 'Brazil CPF',
+                'type' => 'string',
+                'context' => array('view', 'edit'),
+                'default' => '',
+            ),
+            'brazil_cnpj' => array(
+                'description' => 'Brazil CNPJ',
+                'type' => 'string',
+                'context' => array('view', 'edit'),
+                'default' => '',
+            ),
+        );
+    }
+    
+    /**
      * 注册Store API字段
      */
     public function register_store_api_fields() {
@@ -3074,7 +3398,6 @@ class Brazil_Checkout_Fields_Blocks {
                 'type' => 'string',
                 'context' => array('view', 'edit'),
                 'default' => '',
-                'enum' => array('pessoa_fisica', 'pessoa_juridica', ''),
             ),
             'brazil_cpf' => array(
                 'description' => 'Brazil CPF',
@@ -3137,6 +3460,42 @@ class Brazil_Checkout_Fields_Blocks {
         if (strpos($route, '/wc/store/v1/checkout') !== false) {
             error_log('Brazil CPF/CNPJ: Store API checkout request detected');
             error_log('Route: ' . $route);
+        }
+        
+        return $result;
+    }
+
+    /**
+     * 拦截Store API请求以捕获additional_fields数据
+     */
+    public function intercept_store_api_request($result, $server, $request) {
+        $route = $request->get_route();
+        
+        // 只处理checkout相关的Store API请求
+        if (strpos($route, '/wc/store/v1/checkout') !== false) {
+            $body = $request->get_body();
+            $params = $request->get_params();
+            
+            error_log('Brazil Checkout: Intercepted Store API request to: ' . $route);
+            error_log('Brazil Checkout: Request body: ' . $body);
+            
+            // 解析JSON body
+            if (!empty($body)) {
+                $json_data = json_decode($body, true);
+                if ($json_data && isset($json_data['additional_fields'])) {
+                    $additional_fields = $json_data['additional_fields'];
+                    error_log('Brazil Checkout: Found additional_fields in JSON body: ' . print_r($additional_fields, true));
+                    
+                    // 保存到全局变量或session以供后续使用
+                    if (isset($additional_fields['brazil_document']) && !empty($additional_fields['brazil_document'])) {
+                        if (!session_id()) {
+                            session_start();
+                        }
+                        $_SESSION['brazil_intercepted_data'] = $additional_fields;
+                        error_log('Brazil Checkout: Saved intercepted data to session');
+                    }
+                }
+            }
         }
         
         return $result;
@@ -3212,16 +3571,27 @@ class Brazil_Checkout_Fields_Blocks {
         if (isset($_POST['submit']) && check_admin_referer('brazil_checkout_settings', 'brazil_checkout_nonce')) {
             $customer_type_field = sanitize_text_field($_POST['customer_type_field']);
             $document_field = sanitize_text_field($_POST['document_field']);
+            $cpf_value = sanitize_text_field($_POST['cpf_customer_type_value']);
+            $cnpj_value = sanitize_text_field($_POST['cnpj_customer_type_value']);
             
             // 验证字段名称格式
             if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $customer_type_field)) {
                 add_settings_error('brazil_checkout_messages', 'invalid_customer_type_field', '客户类型字段名格式无效。只能包含字母、数字和下划线，且必须以字母或下划线开头。');
             } elseif (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $document_field)) {
                 add_settings_error('brazil_checkout_messages', 'invalid_document_field', '文档字段名格式无效。只能包含字母、数字和下划线，且必须以字母或下划线开头。');
+            } elseif (empty($cpf_value) || empty($cnpj_value)) {
+                add_settings_error('brazil_checkout_messages', 'empty_customer_type_values', '客户类型值不能为空。');
             } else {
                 update_option('brazil_checkout_customer_type_field', $customer_type_field);
                 update_option('brazil_checkout_document_field', $document_field);
-                add_settings_error('brazil_checkout_messages', 'settings_updated', '设置已保存！请注意：更改字段名称后，新订单将使用新的字段名保存数据。', 'updated');
+                update_option('brazil_checkout_cpf_value', $cpf_value);
+                update_option('brazil_checkout_cnpj_value', $cnpj_value);
+                
+                // 自动清理缓存，确保统计数据使用新的客户类型值
+                delete_transient('brazil_cpf_cnpj_stats');
+                delete_transient('brazil_cpf_cnpj_recent_orders');
+                
+                add_settings_error('brazil_checkout_messages', 'settings_updated', '设置已保存！缓存已清理，统计数据将使用新的客户类型值重新计算。', 'updated');
             }
         }
         
@@ -3229,11 +3599,20 @@ class Brazil_Checkout_Fields_Blocks {
         if (isset($_POST['reset_defaults']) && check_admin_referer('brazil_checkout_reset', 'brazil_reset_nonce')) {
             update_option('brazil_checkout_customer_type_field', '_brazil_customer_type');
             update_option('brazil_checkout_document_field', '_brazil_document');
-            add_settings_error('brazil_checkout_messages', 'settings_reset', '设置已重置为默认值！', 'updated');
+            update_option('brazil_checkout_cpf_value', 'pessoa_fisica');
+            update_option('brazil_checkout_cnpj_value', 'pessoa_juridica');
+            
+            // 自动清理缓存，确保统计数据使用重置后的客户类型值
+            delete_transient('brazil_cpf_cnpj_stats');
+            delete_transient('brazil_cpf_cnpj_recent_orders');
+            
+            add_settings_error('brazil_checkout_messages', 'settings_reset', '设置已重置为默认值！缓存已清理，统计数据将重新计算。', 'updated');
         }
         
         $current_customer_type_field = get_option('brazil_checkout_customer_type_field', '_brazil_customer_type');
         $current_document_field = get_option('brazil_checkout_document_field', '_brazil_document');
+        $current_cpf_value = get_option('brazil_checkout_cpf_value', 'pessoa_fisica');
+        $current_cnpj_value = get_option('brazil_checkout_cnpj_value', 'pessoa_juridica');
         ?>
         <div class="wrap">
             <h1>Brazil CPF/CNPJ 配置</h1>
@@ -3263,8 +3642,42 @@ class Brazil_Checkout_Fields_Blocks {
                                        pattern="^[a-zA-Z_][a-zA-Z0-9_]*$" 
                                        title="只能包含字母、数字和下划线，且必须以字母或下划线开头" />
                                 <p class="description">
-                                    存储客户类型：'pessoa_fisica' (CPF) 或 'pessoa_juridica' (CNPJ)<br>
+                                    存储客户类型值的字段名<br>
                                     <strong>当前生效字段名：</strong> <code><?php echo esc_html(BRAZIL_CUSTOMER_TYPE_FIELD); ?></code>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="cpf_customer_type_value">CPF客户类型值</label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="cpf_customer_type_value" 
+                                       name="cpf_customer_type_value" 
+                                       value="<?php echo esc_attr($current_cpf_value); ?>" 
+                                       class="regular-text" 
+                                       placeholder="pessoa_fisica" />
+                                <p class="description">
+                                    当用户输入CPF时，客户类型字段保存的值<br>
+                                    <strong>当前值：</strong> <code><?php echo esc_html($current_cpf_value); ?></code>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="cnpj_customer_type_value">CNPJ客户类型值</label>
+                            </th>
+                            <td>
+                                <input type="text" 
+                                       id="cnpj_customer_type_value" 
+                                       name="cnpj_customer_type_value" 
+                                       value="<?php echo esc_attr($current_cnpj_value); ?>" 
+                                       class="regular-text" 
+                                       placeholder="pessoa_juridica" />
+                                <p class="description">
+                                    当用户输入CNPJ时，客户类型字段保存的值<br>
+                                    <strong>当前值：</strong> <code><?php echo esc_html($current_cnpj_value); ?></code>
                                 </p>
                             </td>
                         </tr>
@@ -3366,6 +3779,124 @@ class Brazil_Checkout_Fields_Blocks {
                 $this->handle_data_migration();
             }
             
+            // 处理客户类型值迁移
+            if (isset($_POST['migrate_customer_types']) && check_admin_referer('brazil_customer_type_migration', 'brazil_customer_type_nonce')) {
+                $this->handle_customer_type_migration();
+            }
+            ?>
+            
+            <h2>🔄 客户类型值迁移工具</h2>
+            <div class="notice notice-info">
+                <p><strong>客户类型值迁移功能</strong> - 当您修改了 CPF 或 CNPJ 的客户类型值时，使用此工具更新现有订单数据。</p>
+                <p><strong>使用场景：</strong> 例如将 "pessoa_fisica" 改为 "individual"，或将 "pessoa_juridica" 改为 "company" 时。</p>
+            </div>
+            
+            <form method="post" action="" style="margin-top: 20px;">
+                <?php wp_nonce_field('brazil_customer_type_migration', 'brazil_customer_type_nonce'); ?>
+                <input type="hidden" name="action" value="migrate_customer_types" />
+                
+                <table class="form-table">
+                    <tbody>
+                        <tr>
+                            <th scope="row">
+                                <label for="old_cpf_value">原 CPF 客户类型值</label>
+                            </th>
+                            <td>
+                                <input type="text" name="old_cpf_value" id="old_cpf_value" value="pessoa_fisica" class="regular-text" />
+                                <p class="description">需要被替换的旧 CPF 客户类型值（例如：pessoa_fisica）</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="new_cpf_value">新 CPF 客户类型值</label>
+                            </th>
+                            <td>
+                                <input type="text" name="new_cpf_value" id="new_cpf_value" value="<?php echo esc_attr($current_cpf_value); ?>" class="regular-text" />
+                                <p class="description">新的 CPF 客户类型值（当前配置：<?php echo esc_html($current_cpf_value); ?>）</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="old_cnpj_value">原 CNPJ 客户类型值</label>
+                            </th>
+                            <td>
+                                <input type="text" name="old_cnpj_value" id="old_cnpj_value" value="pessoa_juridica" class="regular-text" />
+                                <p class="description">需要被替换的旧 CNPJ 客户类型值（例如：pessoa_juridica）</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="new_cnpj_value">新 CNPJ 客户类型值</label>
+                            </th>
+                            <td>
+                                <input type="text" name="new_cnpj_value" id="new_cnpj_value" value="<?php echo esc_attr($current_cnpj_value); ?>" class="regular-text" />
+                                <p class="description">新的 CNPJ 客户类型值（当前配置：<?php echo esc_html($current_cnpj_value); ?>）</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="migrate_all_orders">迁移选项</label>
+                            </th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" name="migrate_all_orders" id="migrate_all_orders" value="1" />
+                                    迁移所有历史订单（包括使用默认值的订单）
+                                </label>
+                                <p class="description">选中此项将同时迁移使用默认客户类型值的订单</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="notice notice-warning">
+                    <p><strong>⚠️ 重要提醒：</strong></p>
+                    <ul style="margin-left: 20px;">
+                        <li>此操作将批量更新订单的客户类型值</li>
+                        <li>建议在执行前备份数据库</li>
+                        <li>操作完成后将显示详细的迁移报告</li>
+                        <li>如果不确定，请先在测试环境中验证</li>
+                    </ul>
+                </div>
+                
+                <div style="margin: 20px 0; padding: 15px; background: #f0f8ff; border-radius: 5px;">
+                    <h4>📊 数据预览</h4>
+                    <p>点击按钮查看当前数据库中的客户类型值分布：</p>
+                    <button type="button" id="preview-migration-data" class="button button-secondary">预览数据</button>
+                    <div id="migration-data-preview" style="margin-top: 10px; display: none;"></div>
+                </div>
+                
+                <?php submit_button('开始客户类型值迁移', 'primary', 'migrate_customer_types'); ?>
+            </form>
+            
+            <script>
+            jQuery(document).ready(function($) {
+                $('#preview-migration-data').on('click', function() {
+                    var button = $(this);
+                    var preview = $('#migration-data-preview');
+                    
+                    button.prop('disabled', true).text('加载中...');
+                    
+                    // AJAX请求获取数据预览
+                    $.post(ajaxurl, {
+                        action: 'brazil_preview_migration_data',
+                        nonce: '<?php echo wp_create_nonce("brazil_preview_migration"); ?>'
+                    }, function(response) {
+                        if (response.success) {
+                            preview.html(response.data).show();
+                        } else {
+                            preview.html('<div class="notice notice-error"><p>无法加载数据预览：' + response.data + '</p></div>').show();
+                        }
+                    }).fail(function() {
+                        preview.html('<div class="notice notice-error"><p>加载数据预览时发生错误</p></div>').show();
+                    }).always(function() {
+                        button.prop('disabled', false).text('预览数据');
+                    });
+                });
+            });
+            </script>
+            </form>
+            
+            <?php
             // 处理缓存清理
             if (isset($_POST['clear_cache']) && check_admin_referer('brazil_clear_cache', 'cache_nonce')) {
                 delete_transient('brazil_cpf_cnpj_stats');
@@ -3509,7 +4040,7 @@ class Brazil_Checkout_Fields_Blocks {
         
         // 重置为默认值
         function resetToDefaults() {
-            if (confirm('确定要重置为默认字段名称吗？\n\n客户类型字段：_brazil_customer_type\n文档字段：_brazil_document\n\n此操作将立即生效。')) {
+            if (confirm('确定要重置为默认配置吗？\n\n客户类型字段：_brazil_customer_type\n文档字段：_brazil_document\nCPF客户类型值：pessoa_fisica\nCNPJ客户类型值：pessoa_juridica\n\n此操作将立即生效。')) {
                 document.getElementById('reset-form').submit();
             }
         }
@@ -3606,6 +4137,341 @@ class Brazil_Checkout_Fields_Blocks {
             add_settings_error('brazil_checkout_messages', 'no_data_to_migrate', 
                 '没有找到需要迁移的数据。', 'notice-info');
         }
+    }
+    
+    /**
+     * 处理客户类型值迁移
+     */
+    private function handle_customer_type_migration() {
+        $old_cpf_value = sanitize_text_field($_POST['old_cpf_value']);
+        $new_cpf_value = sanitize_text_field($_POST['new_cpf_value']);
+        $old_cnpj_value = sanitize_text_field($_POST['old_cnpj_value']);
+        $new_cnpj_value = sanitize_text_field($_POST['new_cnpj_value']);
+        $migrate_all = isset($_POST['migrate_all_orders']) && $_POST['migrate_all_orders'] === '1';
+        
+        // 验证输入
+        if (empty($old_cpf_value) || empty($new_cpf_value) || empty($old_cnpj_value) || empty($new_cnpj_value)) {
+            add_settings_error('brazil_checkout_messages', 'empty_migration_values', 
+                '客户类型值不能为空。', 'error');
+            return;
+        }
+        
+        $customer_type_field = BRAZIL_CUSTOMER_TYPE_FIELD;
+        $document_field = BRAZIL_DOCUMENT_FIELD;
+        
+        // 查找需要迁移的订单
+        $migrated_count = 0;
+        $error_count = 0;
+        $cpf_migrated = 0;
+        $cnpj_migrated = 0;
+        $report = array();
+        
+        try {
+            // 设置更长的执行时间
+            set_time_limit(300);
+            
+            // 检测存储模式
+            $hpos_enabled = $this->detect_hpos_mode();
+            
+            if ($hpos_enabled) {
+                $result = $this->migrate_customer_types_hpos($old_cpf_value, $new_cpf_value, $old_cnpj_value, $new_cnpj_value, $migrate_all);
+            } else {
+                $result = $this->migrate_customer_types_legacy($old_cpf_value, $new_cpf_value, $old_cnpj_value, $new_cnpj_value, $migrate_all);
+            }
+            
+            $migrated_count = $result['total'];
+            $cpf_migrated = $result['cpf'];
+            $cnpj_migrated = $result['cnpj'];
+            $error_count = $result['errors'];
+            $report = $result['report'];
+            
+        } catch (Exception $e) {
+            error_log('Brazil Checkout Customer Type Migration Error: ' . $e->getMessage());
+            add_settings_error('brazil_checkout_messages', 'migration_exception', 
+                '迁移过程中发生错误：' . $e->getMessage(), 'error');
+            return;
+        }
+        
+        // 显示迁移结果
+        if ($migrated_count > 0) {
+            $message = sprintf(
+                '客户类型值迁移完成！总共迁移 %d 个订单（CPF: %d 个，CNPJ: %d 个）。',
+                $migrated_count,
+                $cpf_migrated,
+                $cnpj_migrated
+            );
+            add_settings_error('brazil_checkout_messages', 'migration_success', $message, 'updated');
+            
+            // 详细报告
+            if (!empty($report)) {
+                $report_html = '<div style="margin-top: 10px; padding: 10px; background: #f0f8ff; border-radius: 4px;">';
+                $report_html .= '<h4>迁移详情：</h4>';
+                $report_html .= '<ul>';
+                foreach ($report as $item) {
+                    $report_html .= '<li>' . esc_html($item) . '</li>';
+                }
+                $report_html .= '</ul></div>';
+                
+                add_settings_error('brazil_checkout_messages', 'migration_report', $report_html, 'updated');
+            }
+        }
+        
+        if ($error_count > 0) {
+            add_settings_error('brazil_checkout_messages', 'migration_errors', 
+                sprintf('迁移过程中有 %d 个订单出现错误。详细信息请查看错误日志。', $error_count), 'error');
+        }
+        
+        if ($migrated_count === 0 && $error_count === 0) {
+            add_settings_error('brazil_checkout_messages', 'no_data_to_migrate', 
+                '没有找到需要迁移的客户类型值数据。可能所有订单已经使用新的客户类型值。', 'notice-info');
+        }
+        
+        // 清理缓存
+        delete_transient('brazil_cpf_cnpj_stats');
+        delete_transient('brazil_cpf_cnpj_recent_orders');
+        
+        // 清理WooCommerce缓存
+        if (function_exists('wc_delete_shop_order_transients')) {
+            wc_delete_shop_order_transients();
+        }
+    }
+    
+    /**
+     * HPOS模式下的客户类型值迁移
+     */
+    private function migrate_customer_types_hpos($old_cpf, $new_cpf, $old_cnpj, $new_cnpj, $migrate_all) {
+        global $wpdb;
+        
+        $orders_meta_table = $wpdb->prefix . 'wc_orders_meta';
+        $customer_type_field = BRAZIL_CUSTOMER_TYPE_FIELD;
+        $document_field = BRAZIL_DOCUMENT_FIELD;
+        
+        $migrated_count = 0;
+        $cpf_migrated = 0;
+        $cnpj_migrated = 0;
+        $error_count = 0;
+        $report = array();
+        
+        // 迁移 CPF 客户类型值
+        $cpf_update_result = $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$orders_meta_table} 
+                 SET meta_value = %s 
+                 WHERE meta_key = %s AND meta_value = %s",
+                $new_cpf,
+                $customer_type_field,
+                $old_cpf
+            )
+        );
+        
+        if ($cpf_update_result !== false) {
+            $cpf_migrated = $cpf_update_result;
+            $report[] = "CPF 客户类型值：从 '{$old_cpf}' 更新为 '{$new_cpf}' - {$cpf_update_result} 个订单";
+        } else {
+            $error_count++;
+            error_log("Brazil Checkout: Failed to update CPF customer type values");
+        }
+        
+        // 迁移 CNPJ 客户类型值
+        $cnpj_update_result = $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$orders_meta_table} 
+                 SET meta_value = %s 
+                 WHERE meta_key = %s AND meta_value = %s",
+                $new_cnpj,
+                $customer_type_field,
+                $old_cnpj
+            )
+        );
+        
+        if ($cnpj_update_result !== false) {
+            $cnpj_migrated = $cnpj_update_result;
+            $report[] = "CNPJ 客户类型值：从 '{$old_cnpj}' 更新为 '{$new_cnpj}' - {$cnpj_update_result} 个订单";
+        } else {
+            $error_count++;
+            error_log("Brazil Checkout: Failed to update CNPJ customer type values");
+        }
+        
+        $migrated_count = $cpf_migrated + $cnpj_migrated;
+        
+        // 如果选择迁移所有订单，还需要处理旧格式的字段
+        if ($migrate_all) {
+            $legacy_result = $this->migrate_legacy_customer_types_hpos($old_cpf, $new_cpf, $old_cnpj, $new_cnpj);
+            $migrated_count += $legacy_result['total'];
+            $report = array_merge($report, $legacy_result['report']);
+        }
+        
+        return array(
+            'total' => $migrated_count,
+            'cpf' => $cpf_migrated,
+            'cnpj' => $cnpj_migrated,
+            'errors' => $error_count,
+            'report' => $report
+        );
+    }
+    
+    /**
+     * 传统模式下的客户类型值迁移
+     */
+    private function migrate_customer_types_legacy($old_cpf, $new_cpf, $old_cnpj, $new_cnpj, $migrate_all) {
+        global $wpdb;
+        
+        $customer_type_field = BRAZIL_CUSTOMER_TYPE_FIELD;
+        $migrated_count = 0;
+        $cpf_migrated = 0;
+        $cnpj_migrated = 0;
+        $error_count = 0;
+        $report = array();
+        
+        // 迁移 CPF 客户类型值
+        $cpf_update_result = $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$wpdb->postmeta} 
+                 SET meta_value = %s 
+                 WHERE meta_key = %s AND meta_value = %s",
+                $new_cpf,
+                $customer_type_field,
+                $old_cpf
+            )
+        );
+        
+        if ($cpf_update_result !== false) {
+            $cpf_migrated = $cpf_update_result;
+            $report[] = "CPF 客户类型值：从 '{$old_cpf}' 更新为 '{$new_cpf}' - {$cpf_update_result} 个订单";
+        } else {
+            $error_count++;
+            error_log("Brazil Checkout: Failed to update CPF customer type values");
+        }
+        
+        // 迁移 CNPJ 客户类型值
+        $cnpj_update_result = $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$wpdb->postmeta} 
+                 SET meta_value = %s 
+                 WHERE meta_key = %s AND meta_value = %s",
+                $new_cnpj,
+                $customer_type_field,
+                $old_cnpj
+            )
+        );
+        
+        if ($cnpj_update_result !== false) {
+            $cnpj_migrated = $cnpj_update_result;
+            $report[] = "CNPJ 客户类型值：从 '{$old_cnpj}' 更新为 '{$new_cnpj}' - {$cnpj_update_result} 个订单";
+        } else {
+            $error_count++;
+            error_log("Brazil Checkout: Failed to update CNPJ customer type values");
+        }
+        
+        $migrated_count = $cpf_migrated + $cnpj_migrated;
+        
+        // 如果选择迁移所有订单，还需要处理旧格式的字段
+        if ($migrate_all) {
+            $legacy_result = $this->migrate_legacy_customer_types_legacy($old_cpf, $new_cpf, $old_cnpj, $new_cnpj);
+            $migrated_count += $legacy_result['total'];
+            $report = array_merge($report, $legacy_result['report']);
+        }
+        
+        return array(
+            'total' => $migrated_count,
+            'cpf' => $cpf_migrated,
+            'cnpj' => $cnpj_migrated,
+            'errors' => $error_count,
+            'report' => $report
+        );
+    }
+    
+    /**
+     * HPOS模式下迁移旧格式的客户类型字段
+     */
+    private function migrate_legacy_customer_types_hpos($old_cpf, $new_cpf, $old_cnpj, $new_cnpj) {
+        global $wpdb;
+        
+        $orders_meta_table = $wpdb->prefix . 'wc_orders_meta';
+        $migrated_count = 0;
+        $report = array();
+        
+        // 迁移旧格式的 _customer_type 字段
+        $legacy_cpf_result = $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$orders_meta_table} 
+                 SET meta_value = %s 
+                 WHERE meta_key = '_customer_type' AND meta_value = %s",
+                $new_cpf,
+                $old_cpf
+            )
+        );
+        
+        if ($legacy_cpf_result !== false && $legacy_cpf_result > 0) {
+            $migrated_count += $legacy_cpf_result;
+            $report[] = "旧格式 CPF 客户类型：从 '{$old_cpf}' 更新为 '{$new_cpf}' - {$legacy_cpf_result} 个订单";
+        }
+        
+        $legacy_cnpj_result = $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$orders_meta_table} 
+                 SET meta_value = %s 
+                 WHERE meta_key = '_customer_type' AND meta_value = %s",
+                $new_cnpj,
+                $old_cnpj
+            )
+        );
+        
+        if ($legacy_cnpj_result !== false && $legacy_cnpj_result > 0) {
+            $migrated_count += $legacy_cnpj_result;
+            $report[] = "旧格式 CNPJ 客户类型：从 '{$old_cnpj}' 更新为 '{$new_cnpj}' - {$legacy_cnpj_result} 个订单";
+        }
+        
+        return array(
+            'total' => $migrated_count,
+            'report' => $report
+        );
+    }
+    
+    /**
+     * 传统模式下迁移旧格式的客户类型字段
+     */
+    private function migrate_legacy_customer_types_legacy($old_cpf, $new_cpf, $old_cnpj, $new_cnpj) {
+        global $wpdb;
+        
+        $migrated_count = 0;
+        $report = array();
+        
+        // 迁移旧格式的 _customer_type 字段
+        $legacy_cpf_result = $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$wpdb->postmeta} 
+                 SET meta_value = %s 
+                 WHERE meta_key = '_customer_type' AND meta_value = %s",
+                $new_cpf,
+                $old_cpf
+            )
+        );
+        
+        if ($legacy_cpf_result !== false && $legacy_cpf_result > 0) {
+            $migrated_count += $legacy_cpf_result;
+            $report[] = "旧格式 CPF 客户类型：从 '{$old_cpf}' 更新为 '{$new_cpf}' - {$legacy_cpf_result} 个订单";
+        }
+        
+        $legacy_cnpj_result = $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$wpdb->postmeta} 
+                 SET meta_value = %s 
+                 WHERE meta_key = '_customer_type' AND meta_value = %s",
+                $new_cnpj,
+                $old_cnpj
+            )
+        );
+        
+        if ($legacy_cnpj_result !== false && $legacy_cnpj_result > 0) {
+            $migrated_count += $legacy_cnpj_result;
+            $report[] = "旧格式 CNPJ 客户类型：从 '{$old_cnpj}' 更新为 '{$new_cnpj}' - {$legacy_cnpj_result} 个订单";
+        }
+        
+        return array(
+            'total' => $migrated_count,
+            'report' => $report
+        );
     }
     
     /**
@@ -3763,6 +4629,10 @@ class Brazil_Checkout_Fields_Blocks {
         // HPOS表名
         $orders_meta_table = $wpdb->prefix . 'wc_orders_meta';
         
+        // 获取当前配置的客户类型值
+        $cpf_customer_type_value = $this->get_cpf_customer_type_value();
+        $cnpj_customer_type_value = $this->get_cnpj_customer_type_value();
+        
         // 统计当前字段的订单
         $current_field_orders = $wpdb->get_var($wpdb->prepare("
             SELECT COUNT(DISTINCT order_id) 
@@ -3785,27 +4655,29 @@ class Brazil_Checkout_Fields_Blocks {
             LIMIT 1000
         ", $document_field));
         
-        // 统计CPF订单
+        // 统计CPF订单 - 使用当前配置的客户类型值
         $cpf_orders = $wpdb->get_var($wpdb->prepare("
             SELECT COUNT(DISTINCT order_id) 
             FROM {$orders_meta_table} 
             WHERE (
-                (meta_key = %s AND meta_value = 'pessoa_fisica')
+                (meta_key = %s AND meta_value = %s)
+                OR (meta_key = '_customer_type' AND meta_value = %s)
                 OR (meta_key = '_billing_cpf' AND meta_value != '')
             )
             LIMIT 1000
-        ", $customer_type_field));
+        ", $customer_type_field, $cpf_customer_type_value, $cpf_customer_type_value));
         
-        // 统计CNPJ订单
+        // 统计CNPJ订单 - 使用当前配置的客户类型值
         $cnpj_orders = $wpdb->get_var($wpdb->prepare("
             SELECT COUNT(DISTINCT order_id) 
             FROM {$orders_meta_table} 
             WHERE (
-                (meta_key = %s AND meta_value = 'pessoa_juridica')
+                (meta_key = %s AND meta_value = %s)
+                OR (meta_key = '_customer_type' AND meta_value = %s)
                 OR (meta_key = '_billing_cnpj' AND meta_value != '')
             )
             LIMIT 1000
-        ", $customer_type_field));
+        ", $customer_type_field, $cnpj_customer_type_value, $cnpj_customer_type_value));
         
         return array(
             'total' => intval($all_brazil_orders),
@@ -3824,6 +4696,10 @@ class Brazil_Checkout_Fields_Blocks {
     private function get_legacy_statistics($customer_type_field, $document_field) {
         global $wpdb;
         
+        // 获取当前配置的客户类型值
+        $cpf_customer_type_value = $this->get_cpf_customer_type_value();
+        $cnpj_customer_type_value = $this->get_cnpj_customer_type_value();
+        
         // 统计当前字段的订单
         $current_field_orders = $wpdb->get_var($wpdb->prepare("
             SELECT COUNT(DISTINCT post_id) 
@@ -3846,27 +4722,29 @@ class Brazil_Checkout_Fields_Blocks {
             LIMIT 1000
         ", $document_field));
         
-        // 统计CPF订单
+        // 统计CPF订单 - 使用当前配置的客户类型值
         $cpf_orders = $wpdb->get_var($wpdb->prepare("
             SELECT COUNT(DISTINCT post_id) 
             FROM {$wpdb->postmeta} 
             WHERE (
-                (meta_key = %s AND meta_value = 'pessoa_fisica')
+                (meta_key = %s AND meta_value = %s)
+                OR (meta_key = '_customer_type' AND meta_value = %s)
                 OR (meta_key = '_billing_cpf' AND meta_value != '')
             )
             LIMIT 1000
-        ", $customer_type_field));
+        ", $customer_type_field, $cpf_customer_type_value, $cpf_customer_type_value));
         
-        // 统计CNPJ订单
+        // 统计CNPJ订单 - 使用当前配置的客户类型值
         $cnpj_orders = $wpdb->get_var($wpdb->prepare("
             SELECT COUNT(DISTINCT post_id) 
             FROM {$wpdb->postmeta} 
             WHERE (
-                (meta_key = %s AND meta_value = 'pessoa_juridica')
+                (meta_key = %s AND meta_value = %s)
+                OR (meta_key = '_customer_type' AND meta_value = %s)
                 OR (meta_key = '_billing_cnpj' AND meta_value != '')
             )
             LIMIT 1000
-        ", $customer_type_field));
+        ", $customer_type_field, $cnpj_customer_type_value, $cnpj_customer_type_value));
         
         return array(
             'total' => intval($all_brazil_orders),
@@ -3926,7 +4804,7 @@ class Brazil_Checkout_Fields_Blocks {
             
             if ($recent_orders && count($recent_orders) > 0) {
                 echo '<table class="wp-list-table widefat fixed striped">';
-                echo '<thead><tr><th>订单ID</th><th>客户类型</th><th>文档号码</th><th>字段来源</th><th>订单状态</th><th>创建日期</th></tr></thead>';
+                echo '<thead><tr><th>订单ID</th><th>客户类型</th><th>文档号码</th><th>订单状态</th><th>创建日期</th></tr></thead>';
                 echo '<tbody>';
                 
                 $display_count = 0;
@@ -3956,11 +4834,11 @@ class Brazil_Checkout_Fields_Blocks {
                             $cnpj = $order->get_meta('_billing_cnpj');
                             if ($cpf) {
                                 $document = $cpf;
-                                $customer_type = 'pessoa_fisica';
+                                $customer_type = $this->get_cpf_customer_type_value();
                                 $field_source = 'CPF字段';
                             } elseif ($cnpj) {
                                 $document = $cnpj;
-                                $customer_type = 'pessoa_juridica';
+                                $customer_type = $this->get_cnpj_customer_type_value();
                                 $field_source = 'CNPJ字段';
                             }
                         }
@@ -3970,21 +4848,20 @@ class Brazil_Checkout_Fields_Blocks {
                     if (!empty($document)) {
                         // 简化的类型显示
                         $display_type = '';
-                        if ($customer_type === 'pessoa_fisica') {
+                        if ($this->is_cpf_customer_type($customer_type)) {
                             $display_type = '👤 Pessoa Física';
-                        } elseif ($customer_type === 'pessoa_juridica') {
+                        } elseif ($this->is_cnpj_customer_type($customer_type)) {
                             $display_type = '🏢 Pessoa Jurídica';
                         } else {
-                            // 根据文档长度推断
+                            // 根据文档长度推断Pessoa Física
                             $clean_doc = preg_replace('/[^0-9]/', '', $document);
-                            $display_type = (strlen($clean_doc) === 11) ? '👤 CPF' : '🏢 CNPJ';
+                            $display_type = (strlen($clean_doc) === 11) ? '👤 Pessoa Física' : '🏢 Pessoa Jurídica';
                         }
                         
                         echo '<tr>';
                         echo '<td><a href="' . admin_url('post.php?post=' . $order->get_id() . '&action=edit') . '">#' . $order->get_id() . '</a></td>';
                         echo '<td>' . esc_html($display_type) . '</td>';
                         echo '<td><code>' . esc_html(substr($document, 0, 20)) . '</code></td>';
-                        echo '<td><small>' . esc_html($field_source) . '</small></td>';
                         echo '<td>' . wc_get_order_status_name($order->get_status()) . '</td>';
                         echo '<td>' . $order->get_date_created()->format('Y-m-d H:i') . '</td>';
                         echo '</tr>';
