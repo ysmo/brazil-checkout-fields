@@ -46,6 +46,15 @@ brazil-checkout-fields/
 
 ## Installation
 
+### Method 1: Git Clone (Recommended)
+
+```bash
+cd /wp-content/plugins
+git clone https://github.com/ysmo/brazil-checkout-fields.git
+```
+
+### Method 2: Manual Upload
+
 1. Upload plugin files to `/wp-content/plugins/brazil-checkout-fields/`
 2. Activate plugin in WordPress admin
 3. Configure settings in **WooCommerce → Brazil CPF/CNPJ**

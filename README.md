@@ -29,6 +29,18 @@ A comprehensive WordPress/WooCommerce plugin designed specifically for Brazilian
 
 ### Installation
 
+#### Method 1: Git Clone (Recommended)
+
+1. **Navigate** to your WordPress plugins directory
+2. **Execute** the following command in `/wp-content/plugins`:
+   ```bash
+   git clone https://github.com/ysmo/brazil-checkout-fields.git
+   ```
+3. **Activate** the plugin in WordPress admin panel
+4. **Configure** settings in WooCommerce → Brazil CPF/CNPJ
+
+#### Method 2: Manual Upload
+
 1. **Download** the plugin files
 2. **Upload** to `/wp-content/plugins/brazil-checkout-fields/`
 3. **Activate** the plugin in WordPress admin panel
@@ -99,6 +111,18 @@ Plugin WordPress/WooCommerce desenvolvido especificamente para lojas brasileiras
 
 ### Instalação
 
+#### Método 1: Git Clone (Recomendado)
+
+1. **Navegue** até o diretório de plugins do WordPress
+2. **Execute** o seguinte comando em `/wp-content/plugins`:
+   ```bash
+   git clone https://github.com/ysmo/brazil-checkout-fields.git
+   ```
+3. **Ative** o plugin no painel administrativo do WordPress
+4. **Configure** as opções em WooCommerce → Brazil CPF/CNPJ
+
+#### Método 2: Upload Manual
+
 1. **Baixe** os arquivos do plugin
 2. **Faça upload** para `/wp-content/plugins/brazil-checkout-fields/`
 3. **Ative** o plugin no painel administrativo do WordPress
@@ -168,6 +192,18 @@ Para alterar idioma: **Configurações → Geral → Idioma do Site**
 - ✅ **管理面板**: 统计和管理界面
 
 ### 安装方法
+
+#### 方法 1: Git 克隆（推荐）
+
+1. **导航** 到 WordPress 插件目录
+2. **在** `/wp-content/plugins` **执行**以下命令：
+   ```bash
+   git clone https://github.com/ysmo/brazil-checkout-fields.git
+   ```
+3. **激活** 插件在 WordPress 管理面板中
+4. **配置** 设置在 WooCommerce → Brazil CPF/CNPJ
+
+#### 方法 2: 手动上传
 
 1. **下载** 插件文件
 2. **上传** 到 `/wp-content/plugins/brazil-checkout-fields/`
