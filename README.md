@@ -12,7 +12,7 @@ A WordPress/WooCommerce plugin for handling Brazilian CPF/CNPJ validation and ch
 - ✅ **HPOS Compatibility**: Supports both HPOS and Legacy order storage
 - ✅ **Session Management**: Persistent cart data across page loads
 - ✅ **Statistics Dashboard**: View order statistics and recent data
-- ✅ **Internationalization**: Multi-language support with Chinese translations
+- ✅ **Internationalization**: Multi-language support (Portuguese, Chinese, English)
 
 ## Installation
 
@@ -38,18 +38,55 @@ If you change field names or customer type values, use the migration tools to up
 
 ## Internationalization
 
-The plugin supports multiple languages through WordPress's translation system.
+The plugin supports multiple languages through WordPress's translation system with complete interface translations.
 
 ### Available Languages
 
-- **English** (default)
-- **Chinese (Simplified)** - `zh_CN`
+- 🇺🇸 **English** (default) - `en_US`
+- 🇧🇷 **Português (Brasil)** - `pt_BR` (Brazilian Portuguese)
+- 🇨🇳 **中文 (简体)** - `zh_CN` (Chinese Simplified)
+
+### Language Files Structure
+
+```
+languages/
+├── brazil-checkout-fields.pot          # Translation template
+├── brazil-checkout-fields-pt_BR.po     # Brazilian Portuguese source
+├── brazil-checkout-fields-pt_BR.mo     # Brazilian Portuguese compiled
+├── brazil-checkout-fields-zh_CN.po     # Chinese Simplified source
+└── brazil-checkout-fields-zh_CN.mo     # Chinese Simplified compiled
+```
+
+### Language Activation
+
+The plugin automatically loads the appropriate language based on your WordPress site's configured language. To use a specific language:
+
+1. Go to **Settings → General** in WordPress admin
+2. Set **Site Language** to your preferred language
+3. The plugin will automatically load the corresponding translation
 
 ### Adding New Translations
 
 1. Use the template file: `languages/brazil-checkout-fields.pot`
 2. Create your translation file: `languages/brazil-checkout-fields-{locale}.po`
-3. Compile to binary format: `languages/brazil-checkout-fields-{locale}.mo`
+3. Translate all strings in the PO file
+4. Compile to binary format using msgfmt:
+   ```bash
+   msgfmt brazil-checkout-fields-{locale}.po -o brazil-checkout-fields-{locale}.mo
+   ```
+
+### Translation Coverage
+
+All user-facing elements are fully translatable:
+
+- ✅ Admin interface labels and buttons
+- ✅ Form field labels and placeholders
+- ✅ Validation error messages
+- ✅ Success confirmation messages
+- ✅ Migration tool messages
+- ✅ Debug information interface
+- ✅ JavaScript alert messages
+- ✅ Order data display labels
 
 ### Text Domain
 
@@ -102,10 +139,15 @@ WC()->session->set('brazil_checkout_data', $data);
 
 ### 2.4.0
 
-- Added internationalization support
-- Chinese (Simplified) translations included
-- Improved admin interface with translatable strings
-- Enhanced migration tools with multilingual messages
+- ✅ **Complete Internationalization**: Full multi-language support
+- ✅ **Brazilian Portuguese**: Native pt_BR translation included
+- ✅ **Chinese Simplified**: Complete zh_CN translation included
+- ✅ **Translation Template**: POT file for adding new languages
+- ✅ **Admin Interface**: Fully translatable administration panel
+- ✅ **JavaScript Messages**: Internationalized client-side validation
+- ✅ **Migration Tools**: Multilingual migration interface
+- ✅ **Debug Interface**: Translated debug information panel
+- ✅ **Enhanced User Experience**: Language-appropriate error messages
 
 ### Previous Versions
 
