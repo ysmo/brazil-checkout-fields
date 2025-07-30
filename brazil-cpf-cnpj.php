@@ -7,7 +7,7 @@
 
 if (!defined('ABSPATH')) exit;
 
-// 字段名称自定义配置 - 支持后台配置
+// Field name customization configuration - backend configuration support
 if (!defined('BRAZIL_CUSTOMER_TYPE_FIELD')) {
     $customer_type_field = get_option('brazil_checkout_customer_type_field', '_brazil_customer_type');
     define('BRAZIL_CUSTOMER_TYPE_FIELD', $customer_type_field);
@@ -358,7 +358,7 @@ class Brazil_Checkout_Fields_Blocks {
         ?>
         <script type="text/javascript">
         jQuery(document).ready(function($) {
-            console.log('Brazil CPF/CNPJ: 开始注入字段到块编辑器');
+            console.log('Brazil CPF/CNPJ: Starting field injection to block editor');
             
             var brazilValidation = {
                 errors: [],
@@ -449,47 +449,47 @@ class Brazil_Checkout_Fields_Blocks {
                     // 检查是否选择了巴西国家
                     var isBrazilSelected = this.isBrazilCountrySelected();
                     
-                    console.log('validateAll: 是否选择巴西:', isBrazilSelected);
+                    console.log('validateAll: Is Brazil selected:', isBrazilSelected);
                     
                     // 如果不是巴西，跳过验证
                     if (!isBrazilSelected) {
-                        console.log('validateAll: 不是巴西，跳过验证');
+                        console.log('validateAll: Not Brazil, skipping validation');
                         return true;
                     }
                     
                     // 检查面板是否可见
                     var brazilPanel = $('.brazil-checkout-fields');
                     if (brazilPanel.length === 0 || (!brazilPanel.is(':visible') && !brazilPanel.hasClass('brazil-visible'))) {
-                        console.log('validateAll: 巴西面板不可见，跳过验证');
+                        console.log('validateAll: Brazil panel not visible, skipping validation');
                         return true;
                     }
                     
                     var documentField = $('#brazil_document');
                     var document = documentField.val();
-                    console.log('validateAll: 检查文档字段值:', document);
+                    console.log('validateAll: Checking document field value:', document);
                     
                     // 1. 检查是否为空
                     if (!document || !document.trim()) {
-                        console.log('validateAll: 文档字段为空，添加错误');
+                        console.log('validateAll: Document field is empty, adding error');
                         this.errors.push(brazil_checkout_ajax.messages.document_required);
                         return false;
                     }
                     
                     // 2. 检查字段是否已经标记为无效
                     if (documentField.hasClass('brazil-field-invalid')) {
-                        console.log('validateAll: 字段已标记为无效');
+                        console.log('validateAll: Field already marked as invalid');
                         this.errors.push(brazil_checkout_ajax.messages.document_invalid);
                         return false;
                     }
                     
                     // 3. 执行完整的文档验证
                     if (!this.validateDocument(document)) {
-                        console.log('validateAll: 文档验证失败');
+                        console.log('validateAll: Document validation failed');
                         this.errors.push(brazil_checkout_ajax.messages.document_invalid);
                         return false;
                     }
                     
-                    console.log('validateAll: 验证通过');
+                    console.log('validateAll: Validation passed');
                     return true;
                 },
                 
@@ -573,19 +573,19 @@ class Brazil_Checkout_Fields_Blocks {
                     var checkoutBlock = $('.wp-block-woocommerce-checkout');
                     
                     if (addressBlock.length > 0) {
-                        console.log('找到地址块，注入巴西字段到地址下面');
+                        console.log('Found address block, injecting Brazil fields below address');
                         clearInterval(interval);
                         injectBrazilFields();
                     } else if (fieldsBlock.length > 0 && attempts > 20) {
-                        console.log('找到字段块，注入巴西字段');
+                        console.log('Found fields block, injecting Brazil fields');
                         clearInterval(interval);
                         injectBrazilFieldsToFieldsBlock();
                     } else if (checkoutBlock.length > 0 && attempts > 40) {
-                        console.log('找到结账块，注入巴西字段到顶部');
+                        console.log('Found checkout block, injecting Brazil fields at top');
                         clearInterval(interval);
                         injectBrazilFieldsToCheckoutBlock();
                     } else if (attempts >= maxAttempts) {
-                        console.log('未找到WooCommerce块编辑器元素，尝试传统方法');
+                        console.log('WooCommerce block editor elements not found, trying traditional method');
                         clearInterval(interval);
                         injectBrazilFieldsFallback();
                     }
@@ -599,23 +599,23 @@ class Brazil_Checkout_Fields_Blocks {
                 var billingBlock = $('.wp-block-woocommerce-checkout-billing-address-block');
                 if (billingBlock.length > 0) {
                     billingBlock.after(brazilFieldsHtml);
-                    console.log('巴西字段已插入到账单地址块后面');
+                    console.log('Brazil fields inserted after billing address block');
                 } else {
                     // 查找配送地址块
                     var shippingBlock = $('.wp-block-woocommerce-checkout-shipping-address-block');
                     if (shippingBlock.length > 0) {
                         shippingBlock.after(brazilFieldsHtml);
-                        console.log('巴西字段已插入到配送地址块后面');
+                        console.log('Brazil fields inserted after shipping address block');
                     } else {
                         // 查找任何地址相关的块
                         var anyAddressBlock = $('[class*="address-block"], [class*="contact-information"]').last();
                         if (anyAddressBlock.length > 0) {
                             anyAddressBlock.after(brazilFieldsHtml);
-                            console.log('巴西字段已插入到地址相关块后面');
+                            console.log('Brazil fields inserted after address-related block');
                         } else {
                             // 插入到字段块内
                             $('.wp-block-woocommerce-checkout-fields-block').append(brazilFieldsHtml);
-                            console.log('巴西字段已插入到字段块内');
+                            console.log('Brazil fields inserted inside fields block');
                         }
                     }
                 }
@@ -630,7 +630,7 @@ class Brazil_Checkout_Fields_Blocks {
             function injectBrazilFieldsToFieldsBlock() {
                 var brazilFieldsHtml = createBrazilFieldsHtml();
                 $('.wp-block-woocommerce-checkout-fields-block').append(brazilFieldsHtml);
-                console.log('巴西字段已插入到字段块');
+                console.log('Brazil fields inserted into fields block');
                 
                 setupFieldListeners();
                 setupValidation();
@@ -649,7 +649,7 @@ class Brazil_Checkout_Fields_Blocks {
                     $('.wp-block-woocommerce-checkout').append(brazilFieldsHtml);
                 }
                 
-                console.log('巴西字段已插入到结账块');
+                console.log('Brazil fields inserted into checkout block');
                 
                 setupFieldListeners();
                 setupValidation();
@@ -660,7 +660,7 @@ class Brazil_Checkout_Fields_Blocks {
             function injectBrazilFieldsFallback() {
                 var brazilFieldsHtml = createBrazilFieldsHtml();
                 $('body').prepend('<div style="position: relative; z-index: 999; max-width: 600px; margin: 20px auto;">' + brazilFieldsHtml + '</div>');
-                console.log('使用后备方法插入巴西字段');
+                console.log('Using fallback method to insert Brazil fields');
                 
                 setupFieldListeners();
                 setupValidation();
@@ -677,7 +677,7 @@ class Brazil_Checkout_Fields_Blocks {
                 // 防抖：如果正在切换或者刚刚检查过，跳过
                 var now = Date.now();
                 if (isTogglingPanel || (now - lastCountryCheckTime < 200)) {
-                    console.log('跳过重复的国家检查 (防抖)');
+                    console.log('Skipping duplicate country check (debounced)');
                     return;
                 }
                 
@@ -939,7 +939,7 @@ class Brazil_Checkout_Fields_Blocks {
             function injectBrazilFieldsFallback() {
                 var brazilFieldsHtml = createBrazilFieldsHtml();
                 $('body').prepend('<div style="position: relative; z-index: 999; max-width: 600px; margin: 20px auto;">' + brazilFieldsHtml + '</div>');
-                console.log('使用后备方法插入巴西字段');
+                console.log('Using fallback method to insert Brazil fields');
                 
                 setupFieldListeners();
                 setupValidation();
@@ -2727,26 +2727,26 @@ class Brazil_Checkout_Fields_Blocks {
             }
             
             $html = '<div class="migration-preview">';
-            $html .= '<h4>📈 当前客户类型值分布</h4>';
+            $html .= '<h4>📈 ' . __('Current Customer Type Value Distribution', 'brazil-checkout-fields') . '</h4>';
             $html .= '<table class="wp-list-table widefat fixed striped">';
-            $html .= '<thead><tr><th>字段名</th><th>客户类型值</th><th>订单数量</th><th>文档类型</th></tr></thead>';
+            $html .= '<thead><tr><th>' . __('Field Name', 'brazil-checkout-fields') . '</th><th>' . __('Customer Type Value', 'brazil-checkout-fields') . '</th><th>' . __('Order Count', 'brazil-checkout-fields') . '</th><th>' . __('Document Type', 'brazil-checkout-fields') . '</th></tr></thead>';
             $html .= '<tbody>';
             
             if (empty($data)) {
-                $html .= '<tr><td colspan="4" style="text-align: center; color: #666;">暂无数据</td></tr>';
+                $html .= '<tr><td colspan="4" style="text-align: center; color: #666;">' . __('No data available', 'brazil-checkout-fields') . '</td></tr>';
             } else {
                 foreach ($data as $row) {
                     $document_type = '';
                     if ($row['customer_type'] === get_option('brazil_checkout_cpf_value', 'pessoa_fisica')) {
-                        $document_type = 'CPF (个人)';
+                        $document_type = __('CPF (Individual)', 'brazil-checkout-fields');
                     } elseif ($row['customer_type'] === get_option('brazil_checkout_cnpj_value', 'pessoa_juridica')) {
-                        $document_type = 'CNPJ (企业)';
+                        $document_type = __('CNPJ (Business)', 'brazil-checkout-fields');
                     } elseif ($row['customer_type'] === 'pessoa_fisica') {
-                        $document_type = 'CPF (默认)';
+                        $document_type = __('CPF (Default)', 'brazil-checkout-fields');
                     } elseif ($row['customer_type'] === 'pessoa_juridica') {
-                        $document_type = 'CNPJ (默认)';
+                        $document_type = __('CNPJ (Default)', 'brazil-checkout-fields');
                     } else {
-                        $document_type = '未知';
+                        $document_type = __('Unknown', 'brazil-checkout-fields');
                     }
                     
                     $html .= '<tr>';
@@ -2760,14 +2760,14 @@ class Brazil_Checkout_Fields_Blocks {
             
             $html .= '</tbody></table>';
             $html .= '<p style="margin-top: 15px; font-size: 12px; color: #666;">';
-            $html .= '存储模式：' . ($hpos_enabled ? 'HPOS (高性能订单存储)' : 'Legacy (传统文章存储)');
+            $html .= __('Storage Mode:', 'brazil-checkout-fields') . ' ' . ($hpos_enabled ? __('HPOS (High-Performance Order Storage)', 'brazil-checkout-fields') : __('Legacy (Traditional Post Storage)', 'brazil-checkout-fields'));
             $html .= '</p>';
             $html .= '</div>';
             
             wp_send_json_success($html);
             
         } catch (Exception $e) {
-            wp_send_json_error('预览数据时发生错误：' . $e->getMessage());
+            wp_send_json_error(__('Error occurred while previewing data: ', 'brazil-checkout-fields') . $e->getMessage());
         }
     }
     
@@ -4276,7 +4276,7 @@ class Brazil_Checkout_Fields_Blocks {
         
         if ($cpf_update_result !== false) {
             $cpf_migrated = $cpf_update_result;
-            $report[] = "CPF 客户类型值：从 '{$old_cpf}' 更新为 '{$new_cpf}' - {$cpf_update_result} 个订单";
+            $report[] = sprintf(__("CPF customer type value: updated from '%s' to '%s' - %d orders", 'brazil-checkout-fields'), $old_cpf, $new_cpf, $cpf_update_result);
         } else {
             $error_count++;
             error_log("Brazil Checkout: Failed to update CPF customer type values");
@@ -4296,7 +4296,7 @@ class Brazil_Checkout_Fields_Blocks {
         
         if ($cnpj_update_result !== false) {
             $cnpj_migrated = $cnpj_update_result;
-            $report[] = "CNPJ 客户类型值：从 '{$old_cnpj}' 更新为 '{$new_cnpj}' - {$cnpj_update_result} 个订单";
+            $report[] = sprintf(__("CNPJ customer type value: updated from '%s' to '%s' - %d orders", 'brazil-checkout-fields'), $old_cnpj, $new_cnpj, $cnpj_update_result);
         } else {
             $error_count++;
             error_log("Brazil Checkout: Failed to update CNPJ customer type values");
@@ -4347,7 +4347,7 @@ class Brazil_Checkout_Fields_Blocks {
         
         if ($cpf_update_result !== false) {
             $cpf_migrated = $cpf_update_result;
-            $report[] = "CPF 客户类型值：从 '{$old_cpf}' 更新为 '{$new_cpf}' - {$cpf_update_result} 个订单";
+            $report[] = sprintf(__("CPF customer type value: updated from '%s' to '%s' - %d orders", 'brazil-checkout-fields'), $old_cpf, $new_cpf, $cpf_update_result);
         } else {
             $error_count++;
             error_log("Brazil Checkout: Failed to update CPF customer type values");
@@ -4367,7 +4367,7 @@ class Brazil_Checkout_Fields_Blocks {
         
         if ($cnpj_update_result !== false) {
             $cnpj_migrated = $cnpj_update_result;
-            $report[] = "CNPJ 客户类型值：从 '{$old_cnpj}' 更新为 '{$new_cnpj}' - {$cnpj_update_result} 个订单";
+            $report[] = sprintf(__("CNPJ customer type value: updated from '%s' to '%s' - %d orders", 'brazil-checkout-fields'), $old_cnpj, $new_cnpj, $cnpj_update_result);
         } else {
             $error_count++;
             error_log("Brazil Checkout: Failed to update CNPJ customer type values");
@@ -4859,13 +4859,13 @@ class Brazil_Checkout_Fields_Blocks {
                         // 简化的类型显示
                         $display_type = '';
                         if ($this->is_cpf_customer_type($customer_type)) {
-                            $display_type = '👤 Pessoa Física';
+                            $display_type = '👤 ' . __('Pessoa Física', 'brazil-checkout-fields');
                         } elseif ($this->is_cnpj_customer_type($customer_type)) {
-                            $display_type = '🏢 Pessoa Jurídica';
+                            $display_type = '🏢 ' . __('Pessoa Jurídica', 'brazil-checkout-fields');
                         } else {
                             // 根据文档长度推断Pessoa Física
                             $clean_doc = preg_replace('/[^0-9]/', '', $document);
-                            $display_type = (strlen($clean_doc) === 11) ? '👤 Pessoa Física' : '🏢 Pessoa Jurídica';
+                            $display_type = (strlen($clean_doc) === 11) ? '👤 ' . __('Pessoa Física', 'brazil-checkout-fields') : '🏢 ' . __('Pessoa Jurídica', 'brazil-checkout-fields');
                         }
                         
                         echo '<tr>';

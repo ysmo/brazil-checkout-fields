@@ -452,3 +452,75 @@ msgstr ""
 #: brazil-cpf-cnpj.php
 msgid "Field Name Preview:"
 msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Current Customer Type Value Distribution"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Field Name"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Customer Type Value"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Order Count"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Document Type"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "No data available"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "CPF (Individual)"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "CNPJ (Business)"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "CPF (Default)"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "CNPJ (Default)"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Unknown"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Storage Mode:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Legacy (Traditional Post Storage)"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Error occurred while previewing data: "
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Pessoa Física"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Pessoa Jurídica"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "CPF customer type value: updated from '%s' to '%s' - %d orders"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "CNPJ customer type value: updated from '%s' to '%s' - %d orders"
+msgstr ""

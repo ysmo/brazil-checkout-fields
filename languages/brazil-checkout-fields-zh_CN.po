@@ -452,3 +452,75 @@ msgstr "此操作将立即生效。"
 #: brazil-cpf-cnpj.php
 msgid "Field Name Preview:"
 msgstr "字段名预览："
+
+#: brazil-cpf-cnpj.php
+msgid "Current Customer Type Value Distribution"
+msgstr "当前客户类型值分布"
+
+#: brazil-cpf-cnpj.php
+msgid "Field Name"
+msgstr "字段名"
+
+#: brazil-cpf-cnpj.php
+msgid "Customer Type Value"
+msgstr "客户类型值"
+
+#: brazil-cpf-cnpj.php
+msgid "Order Count"
+msgstr "订单数量"
+
+#: brazil-cpf-cnpj.php
+msgid "Document Type"
+msgstr "文档类型"
+
+#: brazil-cpf-cnpj.php
+msgid "No data available"
+msgstr "暂无数据"
+
+#: brazil-cpf-cnpj.php
+msgid "CPF (Individual)"
+msgstr "CPF (个人)"
+
+#: brazil-cpf-cnpj.php
+msgid "CNPJ (Business)"
+msgstr "CNPJ (企业)"
+
+#: brazil-cpf-cnpj.php
+msgid "CPF (Default)"
+msgstr "CPF (默认)"
+
+#: brazil-cpf-cnpj.php
+msgid "CNPJ (Default)"
+msgstr "CNPJ (默认)"
+
+#: brazil-cpf-cnpj.php
+msgid "Unknown"
+msgstr "未知"
+
+#: brazil-cpf-cnpj.php
+msgid "Storage Mode:"
+msgstr "存储模式："
+
+#: brazil-cpf-cnpj.php
+msgid "Legacy (Traditional Post Storage)"
+msgstr "Legacy (传统文章存储)"
+
+#: brazil-cpf-cnpj.php
+msgid "Error occurred while previewing data: "
+msgstr "预览数据时发生错误："
+
+#: brazil-cpf-cnpj.php
+msgid "Pessoa Física"
+msgstr "Pessoa Física"
+
+#: brazil-cpf-cnpj.php
+msgid "Pessoa Jurídica"
+msgstr "Pessoa Jurídica"
+
+#: brazil-cpf-cnpj.php
+msgid "CPF customer type value: updated from '%s' to '%s' - %d orders"
+msgstr "CPF 客户类型值：从 '%s' 更新为 '%s' - %d 个订单"
+
+#: brazil-cpf-cnpj.php
+msgid "CNPJ customer type value: updated from '%s' to '%s' - %d orders"
+msgstr "CNPJ 客户类型值：从 '%s' 更新为 '%s' - %d 个订单"
