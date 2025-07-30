@@ -1,0 +1,454 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Brazil Checkout Fields 2.4.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-01 12:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: brazil-cpf-cnpj.php
+msgid "Customer type field name format is invalid. Only letters, numbers and underscores are allowed, and must start with a letter or underscore."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Document field name format is invalid. Only letters, numbers and underscores are allowed, and must start with a letter or underscore."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Customer type values cannot be empty."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Settings saved successfully."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Settings have been reset to default values! Cache cleared, statistics will be recalculated."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Brazil CPF/CNPJ Configuration"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Field Name Customization Feature"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "This plugin supports custom database field names"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Customer Type Field Name"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Only letters, numbers and underscores are allowed, and must start with a letter or underscore"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Field name for storing customer type values"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Current effective field name:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "CPF Customer Type Value"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Value saved in customer type field when user enters CPF"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Current value:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "CNPJ Customer Type Value"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Value saved in customer type field when user enters CNPJ"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Document Field Name"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Stores formatted CPF/CNPJ numbers"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Plugin Version"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "2.4.0 - Brazil CPF/CNPJ supports backend field name configuration"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Save Settings"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Reset to Defaults"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Important Notice:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "After changing field names, new orders will use the new field names to save data"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Existing order data will not be automatically migrated to new field names"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "It is recommended to test in a staging environment before using in production"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Field names can only contain letters, numbers and underscores, and must start with a letter or underscore"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Data Migration Tool"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "If you have changed field names, you can use the following tool to migrate existing order data to new fields:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Migration Source Fields"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Customer Type Source Field:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Document Source Field:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Migration Target Fields"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Customer Type Target Field:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Document Target Field:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Start Data Migration"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "🔄 Customer Type Value Migration Tool"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Customer Type Value Migration Feature"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Use this tool to update existing order data when you have modified CPF or CNPJ customer type values."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Use Case:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "For example, when changing \"pessoa_fisica\" to \"individual\", or \"pessoa_juridica\" to \"company\"."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Original CPF Customer Type Value"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Old CPF customer type value to be replaced (e.g.: pessoa_fisica)"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "New CPF Customer Type Value"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "New CPF customer type value (current configuration: %s)"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Original CNPJ Customer Type Value"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Old CNPJ customer type value to be replaced (e.g.: pessoa_juridica)"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "New CNPJ Customer Type Value"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "New CNPJ customer type value (current configuration: %s)"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Migration Options"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Migrate all historical orders (including orders using default values)"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Check this to also migrate orders using default customer type values"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "⚠️ Important Notice:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "This operation will bulk update customer type values in orders"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "It is recommended to backup the database before execution"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "A detailed migration report will be displayed after completion"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "If unsure, please test in a staging environment first"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "📊 Data Preview"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Click the button to view current customer type value distribution in the database:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Preview Data"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Start Customer Type Value Migration"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Loading..."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Unable to load data preview:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Error occurred while loading data preview"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Cache cleared, data will be reloaded. Page will refresh automatically..."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "📊 Recent Order Data"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "If data is not displaying correctly, you can clear cache to force reload:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Clear Cache"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "🇧🇷 Total Orders"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "All Brazil orders"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "👤 CPF Orders"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Individual customers"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "🏢 CNPJ Orders"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Business customers"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "⚙️ Current Field"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "🔧 Current Field Configuration"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Customer Type Field:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Document Field:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Order Storage Mode:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "(High-Performance Order Storage)"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "(Legacy Post Storage)"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Order ID"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Customer Type"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Document Number"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Order Status"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Creation Date"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Current Field"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Legacy Field"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "CPF Field"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "CNPJ Field"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "No orders found with Brazil field data."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Error loading order data, please try again later."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Migration field name format is invalid."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Data migration completed! Successfully migrated %d orders."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "%d orders had errors during migration."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "No data found to migrate."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Error occurred during migration: "
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Customer type value migration completed! Total migrated %d orders (CPF: %d, CNPJ: %d)."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Migration Details:"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "%d orders had errors during migration. Please check error logs for details."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "No customer type value data found to migrate. All orders may already be using new customer type values."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Are you sure you want to reset to default configuration?"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Customer Type Field: _brazil_customer_type"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Document Field: _brazil_document"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "CPF Customer Type Value: pessoa_fisica"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "CNPJ Customer Type Value: pessoa_juridica"
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "This operation will take effect immediately."
+msgstr ""
+
+#: brazil-cpf-cnpj.php
+msgid "Field Name Preview:"
+msgstr ""

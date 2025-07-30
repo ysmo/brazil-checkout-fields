@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Brazil CPF/CNPJ
- * Description: 适配WooCommerce块编辑器的巴西CPF/CNPJ字段 - 智能输入验证，支持字段名称自定义
+ * Description: Brazilian CPF/CNPJ fields for WooCommerce Block Editor - Smart input validation with configurable field names
  * Version: 2.4.0
  */
 
@@ -46,6 +46,9 @@ class Brazil_Checkout_Fields_Blocks {
         if (!class_exists('WooCommerce')) {
             return;
         }
+        
+        // 加载文本域
+        $this->load_textdomain();
         
         // 注册块编辑器扩展
         add_action('woocommerce_blocks_loaded', array($this, 'register_checkout_blocks'));
@@ -138,6 +141,13 @@ class Brazil_Checkout_Fields_Blocks {
             add_action('wp_footer', array($this, 'add_debug_tools'));
             add_action('admin_menu', array($this, 'add_admin_menu'));
         }
+    }
+    
+    /**
+     * 加载文本域
+     */
+    public function load_textdomain() {
+        load_plugin_textdomain('brazil-checkout-fields', false, dirname(plugin_basename(__FILE__)) . '/languages/');
     }
     
     /**
@@ -3576,11 +3586,11 @@ class Brazil_Checkout_Fields_Blocks {
             
             // 验证字段名称格式
             if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $customer_type_field)) {
-                add_settings_error('brazil_checkout_messages', 'invalid_customer_type_field', '客户类型字段名格式无效。只能包含字母、数字和下划线，且必须以字母或下划线开头。');
+                add_settings_error('brazil_checkout_messages', 'invalid_customer_type_field', __('Customer type field name format is invalid. Only letters, numbers and underscores are allowed, and must start with a letter or underscore.', 'brazil-checkout-fields'));
             } elseif (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $document_field)) {
-                add_settings_error('brazil_checkout_messages', 'invalid_document_field', '文档字段名格式无效。只能包含字母、数字和下划线，且必须以字母或下划线开头。');
+                add_settings_error('brazil_checkout_messages', 'invalid_document_field', __('Document field name format is invalid. Only letters, numbers and underscores are allowed, and must start with a letter or underscore.', 'brazil-checkout-fields'));
             } elseif (empty($cpf_value) || empty($cnpj_value)) {
-                add_settings_error('brazil_checkout_messages', 'empty_customer_type_values', '客户类型值不能为空。');
+                add_settings_error('brazil_checkout_messages', 'empty_customer_type_values', __('Customer type values cannot be empty.', 'brazil-checkout-fields'));
             } else {
                 update_option('brazil_checkout_customer_type_field', $customer_type_field);
                 update_option('brazil_checkout_document_field', $document_field);
@@ -3591,7 +3601,7 @@ class Brazil_Checkout_Fields_Blocks {
                 delete_transient('brazil_cpf_cnpj_stats');
                 delete_transient('brazil_cpf_cnpj_recent_orders');
                 
-                add_settings_error('brazil_checkout_messages', 'settings_updated', '设置已保存！缓存已清理，统计数据将使用新的客户类型值重新计算。', 'updated');
+                add_settings_error('brazil_checkout_messages', 'settings_updated', __('Settings saved! Cache cleared, statistics will be recalculated using new customer type values.', 'brazil-checkout-fields'), 'updated');
             }
         }
         
@@ -3606,7 +3616,7 @@ class Brazil_Checkout_Fields_Blocks {
             delete_transient('brazil_cpf_cnpj_stats');
             delete_transient('brazil_cpf_cnpj_recent_orders');
             
-            add_settings_error('brazil_checkout_messages', 'settings_reset', '设置已重置为默认值！缓存已清理，统计数据将重新计算。', 'updated');
+            add_settings_error('brazil_checkout_messages', 'settings_reset', __('Settings have been reset to default values! Cache cleared, statistics will be recalculated.', 'brazil-checkout-fields'), 'updated');
         }
         
         $current_customer_type_field = get_option('brazil_checkout_customer_type_field', '_brazil_customer_type');
@@ -3615,12 +3625,12 @@ class Brazil_Checkout_Fields_Blocks {
         $current_cnpj_value = get_option('brazil_checkout_cnpj_value', 'pessoa_juridica');
         ?>
         <div class="wrap">
-            <h1>Brazil CPF/CNPJ 配置</h1>
+            <h1><?php _e('Brazil CPF/CNPJ Configuration', 'brazil-checkout-fields'); ?></h1>
             
             <?php settings_errors('brazil_checkout_messages'); ?>
             
             <div class="notice notice-info">
-                <p><strong>字段名称自定义功能</strong> - 此插件支持自定义数据库字段名称</p>
+                <p><strong><?php _e('Field Name Customization Feature', 'brazil-checkout-fields'); ?></strong> - <?php _e('This plugin supports custom database field names', 'brazil-checkout-fields'); ?></p>
             </div>
             
             <form method="post" action="">
@@ -3630,7 +3640,7 @@ class Brazil_Checkout_Fields_Blocks {
                     <tbody>
                         <tr>
                             <th scope="row">
-                                <label for="customer_type_field">客户类型字段名</label>
+                                <label for="customer_type_field"><?php _e('Customer Type Field Name', 'brazil-checkout-fields'); ?></label>
                             </th>
                             <td>
                                 <input type="text" 
@@ -3640,16 +3650,16 @@ class Brazil_Checkout_Fields_Blocks {
                                        class="regular-text" 
                                        placeholder="_brazil_customer_type"
                                        pattern="^[a-zA-Z_][a-zA-Z0-9_]*$" 
-                                       title="只能包含字母、数字和下划线，且必须以字母或下划线开头" />
+                                       title="<?php esc_attr_e('Only letters, numbers and underscores are allowed, and must start with a letter or underscore', 'brazil-checkout-fields'); ?>" />
                                 <p class="description">
-                                    存储客户类型值的字段名<br>
-                                    <strong>当前生效字段名：</strong> <code><?php echo esc_html(BRAZIL_CUSTOMER_TYPE_FIELD); ?></code>
+                                    <?php _e('Field name for storing customer type values', 'brazil-checkout-fields'); ?><br>
+                                    <strong><?php _e('Current effective field name:', 'brazil-checkout-fields'); ?></strong> <code><?php echo esc_html(BRAZIL_CUSTOMER_TYPE_FIELD); ?></code>
                                 </p>
                             </td>
                         </tr>
                         <tr>
                             <th scope="row">
-                                <label for="cpf_customer_type_value">CPF客户类型值</label>
+                                <label for="cpf_customer_type_value"><?php _e('CPF Customer Type Value', 'brazil-checkout-fields'); ?></label>
                             </th>
                             <td>
                                 <input type="text" 
@@ -3659,14 +3669,14 @@ class Brazil_Checkout_Fields_Blocks {
                                        class="regular-text" 
                                        placeholder="pessoa_fisica" />
                                 <p class="description">
-                                    当用户输入CPF时，客户类型字段保存的值<br>
-                                    <strong>当前值：</strong> <code><?php echo esc_html($current_cpf_value); ?></code>
+                                    <?php _e('Value saved in customer type field when user enters CPF', 'brazil-checkout-fields'); ?><br>
+                                    <strong><?php _e('Current value:', 'brazil-checkout-fields'); ?></strong> <code><?php echo esc_html($current_cpf_value); ?></code>
                                 </p>
                             </td>
                         </tr>
                         <tr>
                             <th scope="row">
-                                <label for="cnpj_customer_type_value">CNPJ客户类型值</label>
+                                <label for="cnpj_customer_type_value"><?php _e('CNPJ Customer Type Value', 'brazil-checkout-fields'); ?></label>
                             </th>
                             <td>
                                 <input type="text" 
@@ -3676,14 +3686,14 @@ class Brazil_Checkout_Fields_Blocks {
                                        class="regular-text" 
                                        placeholder="pessoa_juridica" />
                                 <p class="description">
-                                    当用户输入CNPJ时，客户类型字段保存的值<br>
-                                    <strong>当前值：</strong> <code><?php echo esc_html($current_cnpj_value); ?></code>
+                                    <?php _e('Value saved in customer type field when user enters CNPJ', 'brazil-checkout-fields'); ?><br>
+                                    <strong><?php _e('Current value:', 'brazil-checkout-fields'); ?></strong> <code><?php echo esc_html($current_cnpj_value); ?></code>
                                 </p>
                             </td>
                         </tr>
                         <tr>
                             <th scope="row">
-                                <label for="document_field">文档字段名</label>
+                                <label for="document_field"><?php _e('Document Field Name', 'brazil-checkout-fields'); ?></label>
                             </th>
                             <td>
                                 <input type="text" 
@@ -3693,24 +3703,24 @@ class Brazil_Checkout_Fields_Blocks {
                                        class="regular-text" 
                                        placeholder="_brazil_document"
                                        pattern="^[a-zA-Z_][a-zA-Z0-9_]*$" 
-                                       title="只能包含字母、数字和下划线，且必须以字母或下划线开头" />
+                                       title="<?php esc_attr_e('Only letters, numbers and underscores are allowed, and must start with a letter or underscore', 'brazil-checkout-fields'); ?>" />
                                 <p class="description">
-                                    存储格式化的CPF/CNPJ号码<br>
-                                    <strong>当前生效字段名：</strong> <code><?php echo esc_html(BRAZIL_DOCUMENT_FIELD); ?></code>
+                                    <?php _e('Stores formatted CPF/CNPJ numbers', 'brazil-checkout-fields'); ?><br>
+                                    <strong><?php _e('Current effective field name:', 'brazil-checkout-fields'); ?></strong> <code><?php echo esc_html(BRAZIL_DOCUMENT_FIELD); ?></code>
                                 </p>
                             </td>
                         </tr>
                         <tr>
-                            <th scope="row">插件版本</th>
-                            <td>2.4.0 - Brazil CPF/CNPJ 支持后台字段名称配置</td>
+                            <th scope="row"><?php _e('Plugin Version', 'brazil-checkout-fields'); ?></th>
+                            <td><?php _e('2.4.0 - Brazil CPF/CNPJ supports backend field name configuration', 'brazil-checkout-fields'); ?></td>
                         </tr>
                     </tbody>
                 </table>
                 
                 <p class="submit">
-                    <?php submit_button('保存设置', 'primary', 'submit', false); ?>
+                    <?php submit_button(__('Save Settings', 'brazil-checkout-fields'), 'primary', 'submit', false); ?>
                     &nbsp;&nbsp;
-                    <button type="button" class="button" onclick="resetToDefaults()">重置为默认值</button>
+                    <button type="button" class="button" onclick="resetToDefaults()"><?php _e('Reset to Defaults', 'brazil-checkout-fields'); ?></button>
                 </p>
             </form>
             
@@ -3721,18 +3731,18 @@ class Brazil_Checkout_Fields_Blocks {
             </form>
             
             <div class="notice notice-warning">
-                <p><strong>重要提醒：</strong></p>
+                <p><strong><?php _e('Important Notice:', 'brazil-checkout-fields'); ?></strong></p>
                 <ul style="margin-left: 20px;">
-                    <li>更改字段名称后，新订单将使用新的字段名保存数据</li>
-                    <li>现有订单的数据不会自动迁移到新字段名</li>
-                    <li>建议在生产环境使用前先在测试环境验证</li>
-                    <li>字段名只能包含字母、数字和下划线，且必须以字母或下划线开头</li>
+                    <li><?php _e('After changing field names, new orders will use the new field names to save data', 'brazil-checkout-fields'); ?></li>
+                    <li><?php _e('Existing order data will not be automatically migrated to new field names', 'brazil-checkout-fields'); ?></li>
+                    <li><?php _e('It is recommended to test in a staging environment before using in production', 'brazil-checkout-fields'); ?></li>
+                    <li><?php _e('Field names can only contain letters, numbers and underscores, and must start with a letter or underscore', 'brazil-checkout-fields'); ?></li>
                 </ul>
             </div>
             
-            <h2>数据迁移工具</h2>
+            <h2><?php _e('Data Migration Tool', 'brazil-checkout-fields'); ?></h2>
             <div class="notice notice-info">
-                <p>如果您更改了字段名称，可以使用以下工具将现有订单数据迁移到新字段：</p>
+                <p><?php _e('If you have changed field names, you can use the following tool to migrate existing order data to new fields:', 'brazil-checkout-fields'); ?></p>
             </div>
             
             <form method="post" action="" style="margin-top: 20px;">
@@ -3742,27 +3752,27 @@ class Brazil_Checkout_Fields_Blocks {
                 <table class="form-table">
                     <tbody>
                         <tr>
-                            <th scope="row">迁移源字段</th>
+                            <th scope="row"><?php _e('Migration Source Fields', 'brazil-checkout-fields'); ?></th>
                             <td>
                                 <label>
-                                    客户类型源字段：
+                                    <?php _e('Customer Type Source Field:', 'brazil-checkout-fields'); ?>
                                     <input type="text" name="source_customer_type" value="_brazil_customer_type" class="regular-text" />
                                 </label><br><br>
                                 <label>
-                                    文档源字段：
+                                    <?php _e('Document Source Field:', 'brazil-checkout-fields'); ?>
                                     <input type="text" name="source_document" value="_brazil_document" class="regular-text" />
                                 </label>
                             </td>
                         </tr>
                         <tr>
-                            <th scope="row">迁移目标字段</th>
+                            <th scope="row"><?php _e('Migration Target Fields', 'brazil-checkout-fields'); ?></th>
                             <td>
                                 <label>
-                                    客户类型目标字段：
+                                    <?php _e('Customer Type Target Field:', 'brazil-checkout-fields'); ?>
                                     <input type="text" name="target_customer_type" value="<?php echo esc_attr($current_customer_type_field); ?>" class="regular-text" readonly />
                                 </label><br><br>
                                 <label>
-                                    文档目标字段：
+                                    <?php _e('Document Target Field:', 'brazil-checkout-fields'); ?>
                                     <input type="text" name="target_document" value="<?php echo esc_attr($current_document_field); ?>" class="regular-text" readonly />
                                 </label>
                             </td>
@@ -3770,7 +3780,7 @@ class Brazil_Checkout_Fields_Blocks {
                     </tbody>
                 </table>
                 
-                <?php submit_button('开始数据迁移', 'secondary', 'migrate_submit'); ?>
+                <?php submit_button(__('Start Data Migration', 'brazil-checkout-fields'), 'secondary', 'migrate_submit'); ?>
             </form>
             
             <?php
@@ -3785,10 +3795,10 @@ class Brazil_Checkout_Fields_Blocks {
             }
             ?>
             
-            <h2>🔄 客户类型值迁移工具</h2>
+            <h2><?php _e('🔄 Customer Type Value Migration Tool', 'brazil-checkout-fields'); ?></h2>
             <div class="notice notice-info">
-                <p><strong>客户类型值迁移功能</strong> - 当您修改了 CPF 或 CNPJ 的客户类型值时，使用此工具更新现有订单数据。</p>
-                <p><strong>使用场景：</strong> 例如将 "pessoa_fisica" 改为 "individual"，或将 "pessoa_juridica" 改为 "company" 时。</p>
+                <p><strong><?php _e('Customer Type Value Migration Feature', 'brazil-checkout-fields'); ?></strong> - <?php _e('Use this tool to update existing order data when you have modified CPF or CNPJ customer type values.', 'brazil-checkout-fields'); ?></p>
+                <p><strong><?php _e('Use Case:', 'brazil-checkout-fields'); ?></strong> <?php _e('For example, when changing "pessoa_fisica" to "individual", or "pessoa_juridica" to "company".', 'brazil-checkout-fields'); ?></p>
             </div>
             
             <form method="post" action="" style="margin-top: 20px;">
@@ -3799,73 +3809,73 @@ class Brazil_Checkout_Fields_Blocks {
                     <tbody>
                         <tr>
                             <th scope="row">
-                                <label for="old_cpf_value">原 CPF 客户类型值</label>
+                                <label for="old_cpf_value"><?php _e('Original CPF Customer Type Value', 'brazil-checkout-fields'); ?></label>
                             </th>
                             <td>
                                 <input type="text" name="old_cpf_value" id="old_cpf_value" value="pessoa_fisica" class="regular-text" />
-                                <p class="description">需要被替换的旧 CPF 客户类型值（例如：pessoa_fisica）</p>
+                                <p class="description"><?php _e('Old CPF customer type value to be replaced (e.g.: pessoa_fisica)', 'brazil-checkout-fields'); ?></p>
                             </td>
                         </tr>
                         <tr>
                             <th scope="row">
-                                <label for="new_cpf_value">新 CPF 客户类型值</label>
+                                <label for="new_cpf_value"><?php _e('New CPF Customer Type Value', 'brazil-checkout-fields'); ?></label>
                             </th>
                             <td>
                                 <input type="text" name="new_cpf_value" id="new_cpf_value" value="<?php echo esc_attr($current_cpf_value); ?>" class="regular-text" />
-                                <p class="description">新的 CPF 客户类型值（当前配置：<?php echo esc_html($current_cpf_value); ?>）</p>
+                                <p class="description"><?php printf(__('New CPF customer type value (current configuration: %s)', 'brazil-checkout-fields'), esc_html($current_cpf_value)); ?></p>
                             </td>
                         </tr>
                         <tr>
                             <th scope="row">
-                                <label for="old_cnpj_value">原 CNPJ 客户类型值</label>
+                                <label for="old_cnpj_value"><?php _e('Original CNPJ Customer Type Value', 'brazil-checkout-fields'); ?></label>
                             </th>
                             <td>
                                 <input type="text" name="old_cnpj_value" id="old_cnpj_value" value="pessoa_juridica" class="regular-text" />
-                                <p class="description">需要被替换的旧 CNPJ 客户类型值（例如：pessoa_juridica）</p>
+                                <p class="description"><?php _e('Old CNPJ customer type value to be replaced (e.g.: pessoa_juridica)', 'brazil-checkout-fields'); ?></p>
                             </td>
                         </tr>
                         <tr>
                             <th scope="row">
-                                <label for="new_cnpj_value">新 CNPJ 客户类型值</label>
+                                <label for="new_cnpj_value"><?php _e('New CNPJ Customer Type Value', 'brazil-checkout-fields'); ?></label>
                             </th>
                             <td>
                                 <input type="text" name="new_cnpj_value" id="new_cnpj_value" value="<?php echo esc_attr($current_cnpj_value); ?>" class="regular-text" />
-                                <p class="description">新的 CNPJ 客户类型值（当前配置：<?php echo esc_html($current_cnpj_value); ?>）</p>
+                                <p class="description"><?php printf(__('New CNPJ customer type value (current configuration: %s)', 'brazil-checkout-fields'), esc_html($current_cnpj_value)); ?></p>
                             </td>
                         </tr>
                         <tr>
                             <th scope="row">
-                                <label for="migrate_all_orders">迁移选项</label>
+                                <label for="migrate_all_orders"><?php _e('Migration Options', 'brazil-checkout-fields'); ?></label>
                             </th>
                             <td>
                                 <label>
                                     <input type="checkbox" name="migrate_all_orders" id="migrate_all_orders" value="1" />
-                                    迁移所有历史订单（包括使用默认值的订单）
+                                    <?php _e('Migrate all historical orders (including orders using default values)', 'brazil-checkout-fields'); ?>
                                 </label>
-                                <p class="description">选中此项将同时迁移使用默认客户类型值的订单</p>
+                                <p class="description"><?php _e('Check this to also migrate orders using default customer type values', 'brazil-checkout-fields'); ?></p>
                             </td>
                         </tr>
                     </tbody>
                 </table>
                 
                 <div class="notice notice-warning">
-                    <p><strong>⚠️ 重要提醒：</strong></p>
+                    <p><strong><?php _e('⚠️ Important Notice:', 'brazil-checkout-fields'); ?></strong></p>
                     <ul style="margin-left: 20px;">
-                        <li>此操作将批量更新订单的客户类型值</li>
-                        <li>建议在执行前备份数据库</li>
-                        <li>操作完成后将显示详细的迁移报告</li>
-                        <li>如果不确定，请先在测试环境中验证</li>
+                        <li><?php _e('This operation will bulk update customer type values in orders', 'brazil-checkout-fields'); ?></li>
+                        <li><?php _e('It is recommended to backup the database before execution', 'brazil-checkout-fields'); ?></li>
+                        <li><?php _e('A detailed migration report will be displayed after completion', 'brazil-checkout-fields'); ?></li>
+                        <li><?php _e('If unsure, please test in a staging environment first', 'brazil-checkout-fields'); ?></li>
                     </ul>
                 </div>
                 
                 <div style="margin: 20px 0; padding: 15px; background: #f0f8ff; border-radius: 5px;">
-                    <h4>📊 数据预览</h4>
-                    <p>点击按钮查看当前数据库中的客户类型值分布：</p>
-                    <button type="button" id="preview-migration-data" class="button button-secondary">预览数据</button>
+                    <h4><?php _e('📊 Data Preview', 'brazil-checkout-fields'); ?></h4>
+                    <p><?php _e('Click the button to view current customer type value distribution in the database:', 'brazil-checkout-fields'); ?></p>
+                    <button type="button" id="preview-migration-data" class="button button-secondary"><?php _e('Preview Data', 'brazil-checkout-fields'); ?></button>
                     <div id="migration-data-preview" style="margin-top: 10px; display: none;"></div>
                 </div>
                 
-                <?php submit_button('开始客户类型值迁移', 'primary', 'migrate_customer_types'); ?>
+                <?php submit_button(__('Start Customer Type Value Migration', 'brazil-checkout-fields'), 'primary', 'migrate_customer_types'); ?>
             </form>
             
             <script>
@@ -3874,7 +3884,7 @@ class Brazil_Checkout_Fields_Blocks {
                     var button = $(this);
                     var preview = $('#migration-data-preview');
                     
-                    button.prop('disabled', true).text('加载中...');
+                    button.prop('disabled', true).text('<?php _e('Loading...', 'brazil-checkout-fields'); ?>');
                     
                     // AJAX请求获取数据预览
                     $.post(ajaxurl, {
@@ -3884,12 +3894,12 @@ class Brazil_Checkout_Fields_Blocks {
                         if (response.success) {
                             preview.html(response.data).show();
                         } else {
-                            preview.html('<div class="notice notice-error"><p>无法加载数据预览：' + response.data + '</p></div>').show();
+                            preview.html('<div class="notice notice-error"><p><?php _e('Unable to load data preview:', 'brazil-checkout-fields'); ?> ' + response.data + '</p></div>').show();
                         }
                     }).fail(function() {
-                        preview.html('<div class="notice notice-error"><p>加载数据预览时发生错误</p></div>').show();
+                        preview.html('<div class="notice notice-error"><p><?php _e('Error occurred while loading data preview', 'brazil-checkout-fields'); ?></p></div>').show();
                     }).always(function() {
-                        button.prop('disabled', false).text('预览数据');
+                        button.prop('disabled', false).text('<?php _e('Preview Data', 'brazil-checkout-fields'); ?>');
                     });
                 });
             });
@@ -3907,19 +3917,19 @@ class Brazil_Checkout_Fields_Blocks {
                 }
                 // 清理对象缓存
                 wp_cache_flush();
-                echo '<div class="notice notice-success"><p>✅ 缓存已清理，数据将重新加载。页面将自动刷新...</p></div>';
+                echo '<div class="notice notice-success"><p>✅ ' . __('Cache cleared, data will be reloaded. Page will refresh automatically...', 'brazil-checkout-fields') . '</p></div>';
                 echo '<script>setTimeout(function(){ window.location.reload(); }, 2000);</script>';
             }
             ?>
             
-            <h2>📊 最近订单数据</h2>
+            <h2><?php _e('📊 Recent Order Data', 'brazil-checkout-fields'); ?></h2>
             
             <!-- 缓存管理 -->
             <div style="margin: 15px 0; padding: 10px; background: #f0f8ff; border-left: 4px solid #0073aa;">
                 <form method="post" style="display: inline;">
                     <?php wp_nonce_field('brazil_clear_cache', 'cache_nonce'); ?>
-                    <p>如果数据显示不正确，可以清理缓存强制重新加载： 
-                    <input type="submit" name="clear_cache" value="清理缓存" class="button button-secondary" />
+                    <p><?php _e('If data is not displaying correctly, you can clear cache to force reload:', 'brazil-checkout-fields'); ?> 
+                    <input type="submit" name="clear_cache" value="<?php esc_attr_e('Clear Cache', 'brazil-checkout-fields'); ?>" class="button button-secondary" />
                     </p>
                 </form>
             </div>
@@ -3930,22 +3940,22 @@ class Brazil_Checkout_Fields_Blocks {
                 $stats = $this->get_brazil_data_statistics();
                 ?>
                 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; min-width: 180px; text-align: center;">
-                    <h4 style="margin: 0 0 10px 0; opacity: 0.9;">🇧🇷 总订单数</h4>
+                    <h4 style="margin: 0 0 10px 0; opacity: 0.9;"><?php _e('🇧🇷 Total Orders', 'brazil-checkout-fields'); ?></h4>
                     <span style="font-size: 32px; font-weight: bold;"><?php echo $stats['total']; ?></span>
-                    <p style="margin: 5px 0 0 0; opacity: 0.8; font-size: 12px;">所有巴西订单</p>
+                    <p style="margin: 5px 0 0 0; opacity: 0.8; font-size: 12px;"><?php _e('All Brazil orders', 'brazil-checkout-fields'); ?></p>
                 </div>
                 <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 8px; min-width: 180px; text-align: center;">
-                    <h4 style="margin: 0 0 10px 0; opacity: 0.9;">👤 CPF订单</h4>
+                    <h4 style="margin: 0 0 10px 0; opacity: 0.9;"><?php _e('👤 CPF Orders', 'brazil-checkout-fields'); ?></h4>
                     <span style="font-size: 32px; font-weight: bold;"><?php echo $stats['cpf']; ?></span>
-                    <p style="margin: 5px 0 0 0; opacity: 0.8; font-size: 12px;">个人客户</p>
+                    <p style="margin: 5px 0 0 0; opacity: 0.8; font-size: 12px;"><?php _e('Individual customers', 'brazil-checkout-fields'); ?></p>
                 </div>
                 <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 20px; border-radius: 8px; min-width: 180px; text-align: center;">
-                    <h4 style="margin: 0 0 10px 0; opacity: 0.9;">🏢 CNPJ订单</h4>
+                    <h4 style="margin: 0 0 10px 0; opacity: 0.9;"><?php _e('🏢 CNPJ Orders', 'brazil-checkout-fields'); ?></h4>
                     <span style="font-size: 32px; font-weight: bold;"><?php echo $stats['cnpj']; ?></span>
-                    <p style="margin: 5px 0 0 0; opacity: 0.8; font-size: 12px;">企业客户</p>
+                    <p style="margin: 5px 0 0 0; opacity: 0.8; font-size: 12px;"><?php _e('Business customers', 'brazil-checkout-fields'); ?></p>
                 </div>
                 <div style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; padding: 20px; border-radius: 8px; min-width: 180px; text-align: center;">
-                    <h4 style="margin: 0 0 10px 0;">⚙️ 当前字段</h4>
+                    <h4 style="margin: 0 0 10px 0;"><?php _e('⚙️ Current Field', 'brazil-checkout-fields'); ?></h4>
                     <span style="font-size: 32px; font-weight: bold;"><?php echo $stats['current_field']; ?></span>
                     <p style="margin: 5px 0 0 0; font-size: 12px;"><?php echo esc_html($stats['current_field_name']); ?></p>
                 </div>
@@ -3953,18 +3963,18 @@ class Brazil_Checkout_Fields_Blocks {
             
             <!-- 字段配置信息 -->
             <div style="background: #f8f9fa; border-left: 4px solid #007cba; padding: 15px; margin: 20px 0;">
-                <h4 style="margin-top: 0;">🔧 当前字段配置</h4>
+                <h4 style="margin-top: 0;"><?php _e('🔧 Current Field Configuration', 'brazil-checkout-fields'); ?></h4>
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
-                        <td style="padding: 8px; font-weight: bold; width: 200px;">客户类型字段:</td>
+                        <td style="padding: 8px; font-weight: bold; width: 200px;"><?php _e('Customer Type Field:', 'brazil-checkout-fields'); ?></td>
                         <td style="padding: 8px;"><code><?php echo esc_html($stats['customer_type_field_name']); ?></code></td>
                     </tr>
                     <tr style="background: #f1f1f1;">
-                        <td style="padding: 8px; font-weight: bold;">文档字段:</td>
+                        <td style="padding: 8px; font-weight: bold;"><?php _e('Document Field:', 'brazil-checkout-fields'); ?></td>
                         <td style="padding: 8px;"><code><?php echo esc_html($stats['current_field_name']); ?></code></td>
                     </tr>
                     <tr>
-                        <td style="padding: 8px; font-weight: bold;">订单存储模式:</td>
+                        <td style="padding: 8px; font-weight: bold;"><?php _e('Order Storage Mode:', 'brazil-checkout-fields'); ?></td>
                         <td style="padding: 8px;">
                             <?php 
                             $storage_type = isset($stats['storage_type']) ? $stats['storage_type'] : 'Unknown';
@@ -3975,9 +3985,9 @@ class Brazil_Checkout_Fields_Blocks {
                                 <?php echo $storage_icon; ?> <?php echo esc_html($storage_type); ?>
                             </span>
                             <?php if ($storage_type === 'HPOS'): ?>
-                                <small style="color: #666; margin-left: 10px;">(高性能订单存储)</small>
+                                <small style="color: #666; margin-left: 10px;"><?php _e('(High-Performance Order Storage)', 'brazil-checkout-fields'); ?></small>
                             <?php elseif ($storage_type === 'Legacy'): ?>
-                                <small style="color: #666; margin-left: 10px;">(传统文章存储)</small>
+                                <small style="color: #666; margin-left: 10px;"><?php _e('(Legacy Post Storage)', 'brazil-checkout-fields'); ?></small>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -4040,7 +4050,7 @@ class Brazil_Checkout_Fields_Blocks {
         
         // 重置为默认值
         function resetToDefaults() {
-            if (confirm('确定要重置为默认配置吗？\n\n客户类型字段：_brazil_customer_type\n文档字段：_brazil_document\nCPF客户类型值：pessoa_fisica\nCNPJ客户类型值：pessoa_juridica\n\n此操作将立即生效。')) {
+            if (confirm('<?php echo esc_js(__('Are you sure you want to reset to default configuration?', 'brazil-checkout-fields')); ?>\n\n<?php echo esc_js(__('Customer Type Field: _brazil_customer_type', 'brazil-checkout-fields')); ?>\n<?php echo esc_js(__('Document Field: _brazil_document', 'brazil-checkout-fields')); ?>\n<?php echo esc_js(__('CPF Customer Type Value: pessoa_fisica', 'brazil-checkout-fields')); ?>\n<?php echo esc_js(__('CNPJ Customer Type Value: pessoa_juridica', 'brazil-checkout-fields')); ?>\n\n<?php echo esc_js(__('This operation will take effect immediately.', 'brazil-checkout-fields')); ?>')) {
                 document.getElementById('reset-form').submit();
             }
         }
@@ -4050,7 +4060,7 @@ class Brazil_Checkout_Fields_Blocks {
             var customerTypeField = document.getElementById('customer_type_field').value || '_brazil_customer_type';
             var documentField = document.getElementById('document_field').value || '_brazil_document';
             
-            alert('字段名预览：\n\n客户类型字段：' + customerTypeField + '\n文档字段：' + documentField);
+            alert('<?php echo esc_js(__('Field Name Preview:', 'brazil-checkout-fields')); ?>\n\n<?php echo esc_js(__('Customer Type Field:', 'brazil-checkout-fields')); ?> ' + customerTypeField + '\n<?php echo esc_js(__('Document Field:', 'brazil-checkout-fields')); ?> ' + documentField);
         }
         </script>
         
@@ -4085,7 +4095,7 @@ class Brazil_Checkout_Fields_Blocks {
             !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $source_document) ||
             !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $target_customer_type) ||
             !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $target_document)) {
-            add_settings_error('brazil_checkout_messages', 'invalid_migration_fields', '迁移字段名格式无效。', 'error');
+            add_settings_error('brazil_checkout_messages', 'invalid_migration_fields', __('Migration field name format is invalid.', 'brazil-checkout-fields'), 'error');
             return;
         }
         
@@ -4125,17 +4135,17 @@ class Brazil_Checkout_Fields_Blocks {
         
         if ($migrated_count > 0) {
             add_settings_error('brazil_checkout_messages', 'migration_success', 
-                sprintf('数据迁移完成！成功迁移 %d 个订单的数据。', $migrated_count), 'updated');
+                sprintf(__('Data migration completed! Successfully migrated %d orders.', 'brazil-checkout-fields'), $migrated_count), 'updated');
         }
         
         if ($error_count > 0) {
             add_settings_error('brazil_checkout_messages', 'migration_errors', 
-                sprintf('迁移过程中有 %d 个订单出现错误。', $error_count), 'error');
+                sprintf(__('%d orders had errors during migration.', 'brazil-checkout-fields'), $error_count), 'error');
         }
         
         if ($migrated_count === 0 && $error_count === 0) {
             add_settings_error('brazil_checkout_messages', 'no_data_to_migrate', 
-                '没有找到需要迁移的数据。', 'notice-info');
+                __('No data found to migrate.', 'brazil-checkout-fields'), 'notice-info');
         }
     }
     
@@ -4152,7 +4162,7 @@ class Brazil_Checkout_Fields_Blocks {
         // 验证输入
         if (empty($old_cpf_value) || empty($new_cpf_value) || empty($old_cnpj_value) || empty($new_cnpj_value)) {
             add_settings_error('brazil_checkout_messages', 'empty_migration_values', 
-                '客户类型值不能为空。', 'error');
+                __('Customer type values cannot be empty.', 'brazil-checkout-fields'), 'error');
             return;
         }
         
@@ -4188,14 +4198,14 @@ class Brazil_Checkout_Fields_Blocks {
         } catch (Exception $e) {
             error_log('Brazil Checkout Customer Type Migration Error: ' . $e->getMessage());
             add_settings_error('brazil_checkout_messages', 'migration_exception', 
-                '迁移过程中发生错误：' . $e->getMessage(), 'error');
+                __('Error occurred during migration: ', 'brazil-checkout-fields') . $e->getMessage(), 'error');
             return;
         }
         
         // 显示迁移结果
         if ($migrated_count > 0) {
             $message = sprintf(
-                '客户类型值迁移完成！总共迁移 %d 个订单（CPF: %d 个，CNPJ: %d 个）。',
+                __('Customer type value migration completed! Total migrated %d orders (CPF: %d, CNPJ: %d).', 'brazil-checkout-fields'),
                 $migrated_count,
                 $cpf_migrated,
                 $cnpj_migrated
@@ -4205,7 +4215,7 @@ class Brazil_Checkout_Fields_Blocks {
             // 详细报告
             if (!empty($report)) {
                 $report_html = '<div style="margin-top: 10px; padding: 10px; background: #f0f8ff; border-radius: 4px;">';
-                $report_html .= '<h4>迁移详情：</h4>';
+                $report_html .= '<h4>' . __('Migration Details:', 'brazil-checkout-fields') . '</h4>';
                 $report_html .= '<ul>';
                 foreach ($report as $item) {
                     $report_html .= '<li>' . esc_html($item) . '</li>';
@@ -4218,12 +4228,12 @@ class Brazil_Checkout_Fields_Blocks {
         
         if ($error_count > 0) {
             add_settings_error('brazil_checkout_messages', 'migration_errors', 
-                sprintf('迁移过程中有 %d 个订单出现错误。详细信息请查看错误日志。', $error_count), 'error');
+                sprintf(__('%d orders had errors during migration. Please check error logs for details.', 'brazil-checkout-fields'), $error_count), 'error');
         }
         
         if ($migrated_count === 0 && $error_count === 0) {
             add_settings_error('brazil_checkout_messages', 'no_data_to_migrate', 
-                '没有找到需要迁移的客户类型值数据。可能所有订单已经使用新的客户类型值。', 'notice-info');
+                __('No customer type value data found to migrate. All orders may already be using new customer type values.', 'brazil-checkout-fields'), 'notice-info');
         }
         
         // 清理缓存
@@ -4804,7 +4814,7 @@ class Brazil_Checkout_Fields_Blocks {
             
             if ($recent_orders && count($recent_orders) > 0) {
                 echo '<table class="wp-list-table widefat fixed striped">';
-                echo '<thead><tr><th>订单ID</th><th>客户类型</th><th>文档号码</th><th>订单状态</th><th>创建日期</th></tr></thead>';
+                echo '<thead><tr><th>' . __('Order ID', 'brazil-checkout-fields') . '</th><th>' . __('Customer Type', 'brazil-checkout-fields') . '</th><th>' . __('Document Number', 'brazil-checkout-fields') . '</th><th>' . __('Order Status', 'brazil-checkout-fields') . '</th><th>' . __('Creation Date', 'brazil-checkout-fields') . '</th></tr></thead>';
                 echo '<tbody>';
                 
                 $display_count = 0;
@@ -4820,14 +4830,14 @@ class Brazil_Checkout_Fields_Blocks {
                     if (!empty($current_document)) {
                         $customer_type = $order->get_meta(BRAZIL_CUSTOMER_TYPE_FIELD);
                         $document = $current_document;
-                        $field_source = '当前字段';
+                        $field_source = __('Current Field', 'brazil-checkout-fields');
                     } else {
                         // 检查主要的旧字段
                         $legacy_document = $order->get_meta('_brazil_document');
                         if (!empty($legacy_document)) {
                             $customer_type = $order->get_meta('_brazil_customer_type');
                             $document = $legacy_document;
-                            $field_source = '旧字段';
+                            $field_source = __('Legacy Field', 'brazil-checkout-fields');
                         } else {
                             // 检查最基本的兼容字段
                             $cpf = $order->get_meta('_billing_cpf');
@@ -4835,11 +4845,11 @@ class Brazil_Checkout_Fields_Blocks {
                             if ($cpf) {
                                 $document = $cpf;
                                 $customer_type = $this->get_cpf_customer_type_value();
-                                $field_source = 'CPF字段';
+                                $field_source = __('CPF Field', 'brazil-checkout-fields');
                             } elseif ($cnpj) {
                                 $document = $cnpj;
                                 $customer_type = $this->get_cnpj_customer_type_value();
-                                $field_source = 'CNPJ字段';
+                                $field_source = __('CNPJ Field', 'brazil-checkout-fields');
                             }
                         }
                     }
@@ -4873,15 +4883,15 @@ class Brazil_Checkout_Fields_Blocks {
                 
                 // 简化的配置信息
                 echo '<div style="margin-top: 15px; padding: 10px; background: #f1f1f1; border-radius: 5px;">';
-                echo '<p><strong>当前字段:</strong> <code>' . BRAZIL_DOCUMENT_FIELD . '</code></p>';
+                echo '<p><strong>' . __('Current Field:', 'brazil-checkout-fields') . '</strong> <code>' . BRAZIL_DOCUMENT_FIELD . '</code></p>';
                 echo '</div>';
                 
             } else {
-                echo '<div class="notice notice-warning"><p>❌ 暂无包含巴西字段数据的订单。</p></div>';
+                echo '<div class="notice notice-warning"><p>❌ ' . __('No orders found with Brazil field data.', 'brazil-checkout-fields') . '</p></div>';
             }
             
         } catch (Exception $e) {
-            echo '<div class="notice notice-error"><p>加载订单数据时出错，请稍后重试。</p></div>';
+            echo '<div class="notice notice-error"><p>' . __('Error loading order data, please try again later.', 'brazil-checkout-fields') . '</p></div>';
             error_log('Brazil CPF/CNPJ: Recent orders error: ' . $e->getMessage());
         }
         

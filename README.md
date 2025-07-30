@@ -1,16 +1,131 @@
-# Brazil Checkout Fields - WooCommerce Plugin
+# Brazil Checkout Fields
 
-## 版本 2.3.0 - 智能 CPF/CNPJ 输入
+A WordPress/WooCommerce plugin for handling Brazilian CPF/CNPJ validation and checkout fields with configurable field names and customer type values.
 
-### 新功能特点
+## Features
 
-- **简化用户界面**: 将原来的两个输入框（CPF 和 CNPJ 选择器 + 对应输入框）简化为一个智能输入框
-- **自动类型检测**: 根据用户输入的数字长度自动判断是 CPF（11 位）还是 CNPJ（14 位）
-- **智能格式化**:
-  - CPF 自动格式化为：`000.000.000-00`
-  - CNPJ 自动格式化为：`00.000.000/0000-00`
-- **实时验证**: 在用户输入时提供即时的格式验证和算法验证
-- **向后兼容**: 保持与旧版本数据格式的完全兼容性
+- ✅ **CPF/CNPJ Validation**: Real-time validation of Brazilian tax documents
+- ✅ **Store API Support**: Full compatibility with WooCommerce Block Editor
+- ✅ **Configurable Field Names**: Customize database field names through admin panel
+- ✅ **Customer Type Values**: Configure CPF/CNPJ customer type values
+- ✅ **Data Migration Tools**: Migrate existing order data between field configurations
+- ✅ **HPOS Compatibility**: Supports both HPOS and Legacy order storage
+- ✅ **Session Management**: Persistent cart data across page loads
+- ✅ **Statistics Dashboard**: View order statistics and recent data
+- ✅ **Internationalization**: Multi-language support with Chinese translations
+
+## Installation
+
+1. Upload the plugin files to `/wp-content/plugins/brazil-checkout-fields/`
+2. Activate the plugin through the WordPress admin panel
+3. Configure field names and customer type values in WooCommerce → Brazil CPF/CNPJ
+
+## Configuration
+
+### Field Name Settings
+
+- **Customer Type Field**: Database field name for storing customer type (default: `_brazil_customer_type`)
+- **Document Field**: Database field name for storing formatted CPF/CNPJ (default: `_brazil_document`)
+- **CPF Customer Type Value**: Value saved when user enters CPF (default: `pessoa_fisica`)
+- **CNPJ Customer Type Value**: Value saved when user enters CNPJ (default: `pessoa_juridica`)
+
+### Data Migration
+
+If you change field names or customer type values, use the migration tools to update existing order data:
+
+1. **Field Migration**: Migrate data from old field names to new ones
+2. **Customer Type Migration**: Update customer type values in existing orders
+
+## Internationalization
+
+The plugin supports multiple languages through WordPress's translation system.
+
+### Available Languages
+
+- **English** (default)
+- **Chinese (Simplified)** - `zh_CN`
+
+### Adding New Translations
+
+1. Use the template file: `languages/brazil-checkout-fields.pot`
+2. Create your translation file: `languages/brazil-checkout-fields-{locale}.po`
+3. Compile to binary format: `languages/brazil-checkout-fields-{locale}.mo`
+
+### Text Domain
+
+All translatable strings use the text domain: `brazil-checkout-fields`
+
+## API Integration
+
+### Store API Endpoints
+
+The plugin automatically integrates with WooCommerce Store API for block-based checkout:
+
+```javascript
+// Store API automatically handles these fields:
+wp.data.select("wc/store/cart").getCartData().extensions.brazil_checkout;
+```
+
+### Session Data
+
+Cart session data is automatically managed:
+
+```php
+// Get session data
+$session_data = WC()->session->get('brazil_checkout_data');
+
+// Set session data
+WC()->session->set('brazil_checkout_data', $data);
+```
+
+## Technical Details
+
+### Storage Compatibility
+
+- **HPOS Mode**: Uses `wp_wc_orders_meta` table
+- **Legacy Mode**: Uses `wp_postmeta` table
+- **Auto-detection**: Automatically detects and uses appropriate storage method
+
+### Field Validation
+
+- Field names must match pattern: `/^[a-zA-Z_][a-zA-Z0-9_]*$/`
+- CPF: 11 digits with validation algorithm
+- CNPJ: 14 digits with validation algorithm
+
+### Caching
+
+- Statistics data cached for 12 hours
+- Recent orders cached for 5 minutes
+- Manual cache clearing available in admin panel
+
+## Version History
+
+### 2.4.0
+
+- Added internationalization support
+- Chinese (Simplified) translations included
+- Improved admin interface with translatable strings
+- Enhanced migration tools with multilingual messages
+
+### Previous Versions
+
+- Store API integration and session management
+- Configurable field names and customer type values
+- Data migration tools
+- HPOS compatibility
+- Statistics dashboard
+
+## Support
+
+For issues and feature requests, please check the plugin documentation or contact support.
+
+## License
+
+This plugin is licensed under the GPL v2 or later.
+
+---
+
+**Note**: This plugin is specifically designed for Brazilian e-commerce requirements and includes validation for CPF (Cadastro de Pessoas Físicas) and CNPJ (Cadastro Nacional da Pessoa Jurídica) tax documents.
 
 ### 技术特性
 
