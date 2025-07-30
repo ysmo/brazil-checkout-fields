@@ -3999,19 +3999,19 @@ class Brazil_Checkout_Fields_Blocks {
             <!-- 调试信息 -->
             <?php if (isset($_GET['debug']) && $_GET['debug'] === '1'): ?>
             <div style="margin-top: 30px; padding: 20px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
-                <h3>🔍 调试信息</h3>
+                <h3>🔍 <?php _e('Debug Information', 'brazil-checkout-fields'); ?></h3>
                 <?php $this->display_debug_info(); ?>
             </div>
             <?php endif; ?>
             
             <div style="margin-top: 20px; padding: 10px; background: #e3f2fd; border-radius: 5px;">
-                <p><strong>💡 提示：</strong> 如果数据显示不正确，请点击 <a href="<?php echo admin_url('admin.php?page=brazil-checkout-fields&debug=1'); ?>">这里查看调试信息</a></p>
+                <p><strong>💡 <?php _e('Tip:', 'brazil-checkout-fields'); ?></strong> <?php _e('If data display is incorrect, please click', 'brazil-checkout-fields'); ?> <a href="<?php echo admin_url('admin.php?page=brazil-checkout-fields&debug=1'); ?>"><?php _e('here to view debug information', 'brazil-checkout-fields'); ?></a></p>
             </div>
         </div>
         
         <script>
         jQuery(document).ready(function($) {
-            // 字段名称验证
+            // Field name validation
             $('#customer_type_field, #document_field').on('input', function() {
                 var value = $(this).val();
                 var isValid = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value);
@@ -4019,7 +4019,7 @@ class Brazil_Checkout_Fields_Blocks {
                 if (value && !isValid) {
                     $(this).css('border-color', '#dc3232');
                     if (!$(this).next('.error-message').length) {
-                        $(this).after('<span class="error-message" style="color: #dc3232; font-size: 12px; display: block;">字段名格式无效</span>');
+                        $(this).after('<span class="error-message" style="color: #dc3232; font-size: 12px; display: block;"><?php echo esc_js(__('Invalid field name format', 'brazil-checkout-fields')); ?></span>');
                     }
                 } else {
                     $(this).css('border-color', '');
@@ -4043,7 +4043,7 @@ class Brazil_Checkout_Fields_Blocks {
                 
                 if (hasError) {
                     e.preventDefault();
-                    alert('请检查字段名格式，只能包含字母、数字和下划线，且必须以字母或下划线开头。');
+                    alert('<?php echo esc_js(__('Please check the field name format. Only letters, numbers and underscores are allowed, and must start with a letter or underscore.', 'brazil-checkout-fields')); ?>');
                 }
             });
         });
@@ -4910,7 +4910,7 @@ class Brazil_Checkout_Fields_Blocks {
     private function display_debug_info() {
         // 只有管理员且明确请求调试时才显示
         if (!current_user_can('manage_options')) {
-            echo '<p>需要管理员权限才能查看调试信息。</p>';
+            echo '<p>' . __('Administrator permissions required to view debug information.', 'brazil-checkout-fields') . '</p>';
             return;
         }
         
@@ -4922,16 +4922,16 @@ class Brazil_Checkout_Fields_Blocks {
             // 检查存储模式 - 使用统一的检测方法
             $hpos_enabled = $this->detect_hpos_mode();
             
-            echo '<h4>WooCommerce 存储模式检测:</h4>';
+            echo '<h4>' . __('WooCommerce Storage Mode Detection:', 'brazil-checkout-fields') . '</h4>';
             echo '<div style="background: ' . ($hpos_enabled ? '#d4edda' : '#fff3cd') . '; padding: 10px; border-radius: 5px; margin: 10px 0;">';
             
             // 显示详细的检测过程
-            echo '<h5>检测过程:</h5>';
+            echo '<h5>' . __('Detection Process:', 'brazil-checkout-fields') . '</h5>';
             echo '<ul>';
             
             // 检测WooCommerce设置
             $hpos_setting = get_option('woocommerce_custom_orders_table_enabled', 'no');
-            echo '<li><strong>WC设置检测:</strong> woocommerce_custom_orders_table_enabled = ' . $hpos_setting . '</li>';
+            echo '<li><strong>' . __('WC Settings Detection:', 'brazil-checkout-fields') . '</strong> woocommerce_custom_orders_table_enabled = ' . $hpos_setting . '</li>';
             
             // 检测数据库表
             $orders_table = $wpdb->prefix . 'wc_orders';
@@ -4939,49 +4939,49 @@ class Brazil_Checkout_Fields_Blocks {
             $orders_exists = $wpdb->get_var("SHOW TABLES LIKE '{$orders_table}'") === $orders_table;
             $meta_exists = $wpdb->get_var("SHOW TABLES LIKE '{$orders_meta_table}'") === $orders_meta_table;
             
-            echo '<li><strong>数据库表检测:</strong></li>';
+            echo '<li><strong>' . __('Database Tables Detection:', 'brazil-checkout-fields') . '</strong></li>';
             echo '<ul>';
-            echo '<li>' . $orders_table . ' 表存在: ' . ($orders_exists ? '✅ 是' : '❌ 否') . '</li>';
-            echo '<li>' . $orders_meta_table . ' 表存在: ' . ($meta_exists ? '✅ 是' : '❌ 否') . '</li>';
+            echo '<li>' . $orders_table . ' ' . __('table exists:', 'brazil-checkout-fields') . ' ' . ($orders_exists ? '✅ ' . __('Yes', 'brazil-checkout-fields') : '❌ ' . __('No', 'brazil-checkout-fields')) . '</li>';
+            echo '<li>' . $orders_meta_table . ' ' . __('table exists:', 'brazil-checkout-fields') . ' ' . ($meta_exists ? '✅ ' . __('Yes', 'brazil-checkout-fields') : '❌ ' . __('No', 'brazil-checkout-fields')) . '</li>';
             
             if ($orders_exists) {
                 $order_count = $wpdb->get_var("SELECT COUNT(*) FROM {$orders_table}");
-                echo '<li>' . $orders_table . ' 记录数: ' . $order_count . '</li>';
+                echo '<li>' . $orders_table . ' ' . __('record count:', 'brazil-checkout-fields') . ' ' . $order_count . '</li>';
             }
             
             if ($meta_exists) {
                 $meta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$orders_meta_table}");
-                echo '<li>' . $orders_meta_table . ' 记录数: ' . $meta_count . '</li>';
+                echo '<li>' . $orders_meta_table . ' ' . __('record count:', 'brazil-checkout-fields') . ' ' . $meta_count . '</li>';
             }
             echo '</ul>';
             
             // 检测API可用性
             $orderutil_available = class_exists('Automattic\WooCommerce\Utilities\OrderUtil');
-            echo '<li><strong>WC OrderUtil类:</strong> ' . ($orderutil_available ? '✅ 可用' : '❌ 不可用') . '</li>';
+            echo '<li><strong>' . __('WC OrderUtil Class:', 'brazil-checkout-fields') . '</strong> ' . ($orderutil_available ? '✅ ' . __('Available', 'brazil-checkout-fields') : '❌ ' . __('Not Available', 'brazil-checkout-fields')) . '</li>';
             
             if ($orderutil_available) {
                 try {
                     $api_result = \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
-                    echo '<li><strong>OrderUtil检测结果:</strong> ' . ($api_result ? '✅ HPOS启用' : '❌ HPOS未启用') . '</li>';
+                    echo '<li><strong>' . __('OrderUtil Detection Result:', 'brazil-checkout-fields') . '</strong> ' . ($api_result ? '✅ ' . __('HPOS Enabled', 'brazil-checkout-fields') : '❌ ' . __('HPOS Not Enabled', 'brazil-checkout-fields')) . '</li>';
                 } catch (Exception $e) {
-                    echo '<li><strong>OrderUtil检测错误:</strong> ' . esc_html($e->getMessage()) . '</li>';
+                    echo '<li><strong>' . __('OrderUtil Detection Error:', 'brazil-checkout-fields') . '</strong> ' . esc_html($e->getMessage()) . '</li>';
                 }
             }
             
             echo '</ul>';
             
             if ($hpos_enabled) {
-                echo '<p><strong>🚀 最终结果: 高性能订单存储 (HPOS)</strong></p>';
-                echo '<p>数据存储在: <code>wp_wc_orders</code> 和 <code>wp_wc_orders_meta</code> 表中</p>';
+                echo '<p><strong>🚀 ' . __('Final Result: High-Performance Order Storage (HPOS)', 'brazil-checkout-fields') . '</strong></p>';
+                echo '<p>' . __('Data stored in:', 'brazil-checkout-fields') . ' <code>wp_wc_orders</code> ' . __('and', 'brazil-checkout-fields') . ' <code>wp_wc_orders_meta</code> ' . __('tables', 'brazil-checkout-fields') . '</p>';
             } else {
-                echo '<p><strong>📦 最终结果: 传统文章存储</strong></p>';
-                echo '<p>数据存储在: <code>wp_posts</code> 和 <code>wp_postmeta</code> 表中</p>';
+                echo '<p><strong>📦 ' . __('Final Result: Legacy Post Storage', 'brazil-checkout-fields') . '</strong></p>';
+                echo '<p>' . __('Data stored in:', 'brazil-checkout-fields') . ' <code>wp_posts</code> ' . __('and', 'brazil-checkout-fields') . ' <code>wp_postmeta</code> ' . __('tables', 'brazil-checkout-fields') . '</p>';
             }
             echo '</div>';
             
             if ($hpos_enabled) {
                 // 检查HPOS表中的数据
-                echo '<h4>HPOS表中的相关字段 (限制前20个):</h4>';
+                echo '<h4>' . __('Related Fields in HPOS Tables (limited to top 20):', 'brazil-checkout-fields') . '</h4>';
                 $orders_meta_table = $wpdb->prefix . 'wc_orders_meta';
                 
                 $hpos_fields = $wpdb->get_results("
@@ -4997,7 +4997,7 @@ class Brazil_Checkout_Fields_Blocks {
                 
                 if ($hpos_fields) {
                     echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr><th>字段名</th><th>记录数</th><th>唯一订单数</th></tr></thead>';
+                    echo '<thead><tr><th>' . __('Field Name', 'brazil-checkout-fields') . '</th><th>' . __('Record Count', 'brazil-checkout-fields') . '</th><th>' . __('Unique Orders', 'brazil-checkout-fields') . '</th></tr></thead>';
                     echo '<tbody>';
                     
                     foreach ($hpos_fields as $field) {
@@ -5009,11 +5009,11 @@ class Brazil_Checkout_Fields_Blocks {
                     }
                     echo '</tbody></table>';
                 } else {
-                    echo '<p>❌ HPOS表中没有找到任何相关字段。</p>';
+                    echo '<p>❌ ' . __('No related fields found in HPOS tables.', 'brazil-checkout-fields') . '</p>';
                 }
             } else {
                 // 检查传统postmeta表中的数据
-                echo '<h4>PostMeta表中的相关字段 (限制前20个):</h4>';
+                echo '<h4>' . __('Related Fields in PostMeta Table (limited to top 20):', 'brazil-checkout-fields') . '</h4>';
             }
             
             // 无论哪种模式都检查postmeta表（用于对比）
@@ -5032,7 +5032,7 @@ class Brazil_Checkout_Fields_Blocks {
                 // 传统模式时显示postmeta结果
                 if ($brazil_fields) {
                     echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr><th>字段名</th><th>记录数</th><th>唯一订单数</th></tr></thead>';
+                    echo '<thead><tr><th>' . __('Field Name', 'brazil-checkout-fields') . '</th><th>' . __('Record Count', 'brazil-checkout-fields') . '</th><th>' . __('Unique Orders', 'brazil-checkout-fields') . '</th></tr></thead>';
                     echo '<tbody>';
                     
                     foreach ($brazil_fields as $field) {
@@ -5044,13 +5044,13 @@ class Brazil_Checkout_Fields_Blocks {
                     }
                     echo '</tbody></table>';
                 } else {
-                    echo '<p>❌ PostMeta表中没有找到任何相关字段。</p>';
+                    echo '<p>❌ ' . __('No related fields found in PostMeta table.', 'brazil-checkout-fields') . '</p>';
                 }
             } elseif ($brazil_fields) {
                 // HPOS模式时显示postmeta作为对比
-                echo '<h4>PostMeta表中的遗留数据 (仅供对比):</h4>';
+                echo '<h4>' . __('Legacy Data in PostMeta Table (for comparison only):', 'brazil-checkout-fields') . '</h4>';
                 echo '<table class="wp-list-table widefat fixed striped">';
-                echo '<thead><tr><th>字段名</th><th>记录数</th><th>唯一订单数</th></tr></thead>';
+                echo '<thead><tr><th>' . __('Field Name', 'brazil-checkout-fields') . '</th><th>' . __('Record Count', 'brazil-checkout-fields') . '</th><th>' . __('Unique Orders', 'brazil-checkout-fields') . '</th></tr></thead>';
                 echo '<tbody>';
                 
                 foreach ($brazil_fields as $field) {
@@ -5061,19 +5061,19 @@ class Brazil_Checkout_Fields_Blocks {
                     echo '</tr>';
                 }
                 echo '</tbody></table>';
-                echo '<p><small>注意: 在HPOS模式下，这些可能是旧的遗留数据。</small></p>';
+                echo '<p><small>' . __('Note: In HPOS mode, these may be old legacy data.', 'brazil-checkout-fields') . '</small></p>';
             }
             
-            echo '<h4>当前插件配置:</h4>';
+            echo '<h4>' . __('Current Plugin Configuration:', 'brazil-checkout-fields') . '</h4>';
             echo '<ul>';
             echo '<li><strong>BRAZIL_CUSTOMER_TYPE_FIELD:</strong> <code>' . BRAZIL_CUSTOMER_TYPE_FIELD . '</code></li>';
             echo '<li><strong>BRAZIL_DOCUMENT_FIELD:</strong> <code>' . BRAZIL_DOCUMENT_FIELD . '</code></li>';
-            echo '<li><strong>插件版本:</strong> 2.4.0</li>';
-            echo '<li><strong>存储模式:</strong> ' . ($hpos_enabled ? 'HPOS (高性能订单存储)' : 'Legacy (传统文章存储)') . '</li>';
+            echo '<li><strong>' . __('Plugin Version:', 'brazil-checkout-fields') . '</strong> 2.4.0</li>';
+            echo '<li><strong>' . __('Storage Mode:', 'brazil-checkout-fields') . '</strong> ' . ($hpos_enabled ? 'HPOS (' . __('High-Performance Order Storage', 'brazil-checkout-fields') . ')' : 'Legacy (' . __('Legacy Post Storage', 'brazil-checkout-fields') . ')') . '</li>';
             echo '</ul>';
             
         } catch (Exception $e) {
-            echo '<div class="notice notice-error"><p>调试信息加载出错: ' . esc_html($e->getMessage()) . '</p></div>';
+            echo '<div class="notice notice-error"><p>' . __('Debug information loading error:', 'brazil-checkout-fields') . ' ' . esc_html($e->getMessage()) . '</p></div>';
         }
     }
 }

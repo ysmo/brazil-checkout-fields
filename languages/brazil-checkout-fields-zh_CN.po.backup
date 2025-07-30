@@ -18,19 +18,12 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"Customer type field name format is invalid. Only letters, numbers and "
-"underscores are allowed, and must start with a letter or underscore."
-msgstr ""
-"客户类型字段名格式无效。只能包含字母、数字和下划线，且必须以字母或下划线开"
-"头。"
+msgid "Customer type field name format is invalid. Only letters, numbers and underscores are allowed, and must start with a letter or underscore."
+msgstr "客户类型字段名格式无效。只能包含字母、数字和下划线，且必须以字母或下划线开头。"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"Document field name format is invalid. Only letters, numbers and underscores "
-"are allowed, and must start with a letter or underscore."
-msgstr ""
-"文档字段名格式无效。只能包含字母、数字和下划线，且必须以字母或下划线开头。"
+msgid "Document field name format is invalid. Only letters, numbers and underscores are allowed, and must start with a letter or underscore."
+msgstr "文档字段名格式无效。只能包含字母、数字和下划线，且必须以字母或下划线开头。"
 
 #: brazil-cpf-cnpj.php
 msgid "Customer type values cannot be empty."
@@ -41,9 +34,7 @@ msgid "Settings saved successfully."
 msgstr "设置已成功保存。"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"Settings have been reset to default values! Cache cleared, statistics will "
-"be recalculated."
+msgid "Settings have been reset to default values! Cache cleared, statistics will be recalculated."
 msgstr "设置已重置为默认值！缓存已清理，统计数据将重新计算。"
 
 #: brazil-cpf-cnpj.php
@@ -63,9 +54,7 @@ msgid "Customer Type Field Name"
 msgstr "客户类型字段名"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"Only letters, numbers and underscores are allowed, and must start with a "
-"letter or underscore"
+msgid "Only letters, numbers and underscores are allowed, and must start with a letter or underscore"
 msgstr "只能包含字母、数字和下划线，且必须以字母或下划线开头"
 
 #: brazil-cpf-cnpj.php
@@ -125,25 +114,19 @@ msgid "Important Notice:"
 msgstr "重要提醒："
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"After changing field names, new orders will use the new field names to save "
-"data"
+msgid "After changing field names, new orders will use the new field names to save data"
 msgstr "更改字段名称后，新订单将使用新的字段名保存数据"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"Existing order data will not be automatically migrated to new field names"
+msgid "Existing order data will not be automatically migrated to new field names"
 msgstr "现有订单的数据不会自动迁移到新字段名"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"It is recommended to test in a staging environment before using in production"
+msgid "It is recommended to test in a staging environment before using in production"
 msgstr "建议在生产环境使用前先在测试环境验证"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"Field names can only contain letters, numbers and underscores, and must "
-"start with a letter or underscore"
+msgid "Field names can only contain letters, numbers and underscores, and must start with a letter or underscore"
 msgstr "字段名只能包含字母、数字和下划线，且必须以字母或下划线开头"
 
 #: brazil-cpf-cnpj.php
@@ -151,9 +134,7 @@ msgid "Data Migration Tool"
 msgstr "数据迁移工具"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"If you have changed field names, you can use the following tool to migrate "
-"existing order data to new fields:"
+msgid "If you have changed field names, you can use the following tool to migrate existing order data to new fields:"
 msgstr "如果您更改了字段名称，可以使用以下工具将现有订单数据迁移到新字段："
 
 #: brazil-cpf-cnpj.php
@@ -193,9 +174,7 @@ msgid "Customer Type Value Migration Feature"
 msgstr "客户类型值迁移功能"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"Use this tool to update existing order data when you have modified CPF or "
-"CNPJ customer type values."
+msgid "Use this tool to update existing order data when you have modified CPF or CNPJ customer type values."
 msgstr "当您修改了 CPF 或 CNPJ 的客户类型值时，使用此工具更新现有订单数据。"
 
 #: brazil-cpf-cnpj.php
@@ -203,12 +182,8 @@ msgid "Use Case:"
 msgstr "使用场景："
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"For example, when changing \"pessoa_fisica\" to \"individual\", or "
-"\"pessoa_juridica\" to \"company\"."
-msgstr ""
-"例如将 \"pessoa_fisica\" 改为 \"individual\"，或将 \"pessoa_juridica\" 改为 "
-"\"company\" 时。"
+msgid "For example, when changing \"pessoa_fisica\" to \"individual\", or \"pessoa_juridica\" to \"company\"."
+msgstr "例如将 \"pessoa_fisica\" 改为 \"individual\"，或将 \"pessoa_juridica\" 改为 \"company\" 时。"
 
 #: brazil-cpf-cnpj.php
 msgid "Original CPF Customer Type Value"
@@ -279,9 +254,7 @@ msgid "📊 Data Preview"
 msgstr "📊 数据预览"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"Click the button to view current customer type value distribution in the "
-"database:"
+msgid "Click the button to view current customer type value distribution in the database:"
 msgstr "点击按钮查看当前数据库中的客户类型值分布："
 
 #: brazil-cpf-cnpj.php
@@ -305,8 +278,7 @@ msgid "Error occurred while loading data preview"
 msgstr "加载数据预览时发生错误"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"Cache cleared, data will be reloaded. Page will refresh automatically..."
+msgid "Cache cleared, data will be reloaded. Page will refresh automatically..."
 msgstr "缓存已清理，数据将重新加载。页面将自动刷新..."
 
 #: brazil-cpf-cnpj.php
@@ -314,8 +286,7 @@ msgid "📊 Recent Order Data"
 msgstr "📊 最近订单数据"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"If data is not displaying correctly, you can clear cache to force reload:"
+msgid "If data is not displaying correctly, you can clear cache to force reload:"
 msgstr "如果数据显示不正确，可以清理缓存强制重新加载："
 
 #: brazil-cpf-cnpj.php
@@ -439,9 +410,7 @@ msgid "Error occurred during migration: "
 msgstr "迁移过程中发生错误："
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"Customer type value migration completed! Total migrated %d orders (CPF: %d, "
-"CNPJ: %d)."
+msgid "Customer type value migration completed! Total migrated %d orders (CPF: %d, CNPJ: %d)."
 msgstr "客户类型值迁移完成！总共迁移 %d 个订单（CPF: %d 个，CNPJ: %d 个）。"
 
 #: brazil-cpf-cnpj.php
@@ -449,14 +418,11 @@ msgid "Migration Details:"
 msgstr "迁移详情："
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"%d orders had errors during migration. Please check error logs for details."
+msgid "%d orders had errors during migration. Please check error logs for details."
 msgstr "迁移过程中有 %d 个订单出现错误。详细信息请查看错误日志。"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"No customer type value data found to migrate. All orders may already be "
-"using new customer type values."
+msgid "No customer type value data found to migrate. All orders may already be using new customer type values."
 msgstr "没有找到需要迁移的客户类型值数据。可能所有订单已经使用新的客户类型值。"
 
 #: brazil-cpf-cnpj.php
@@ -532,15 +498,8 @@ msgid "Unknown"
 msgstr "未知"
 
 #: brazil-cpf-cnpj.php
-#, fuzzy
 msgid "Storage Mode:"
-msgstr ""
-"#-#-#-#-#  brazil-checkout-fields-zh_CN.po (Brazil Checkout Fields 2.4.0)  #-"
-"#-#-#-#\n"
-"存储模式：\n"
-"#-#-#-#-#  brazil-checkout-fields-zh_CN.po (Brazil Checkout Fields 2.4.0)  #-"
-"#-#-#-#\n"
-"存储模式:"
+msgstr "存储模式："
 
 #: brazil-cpf-cnpj.php
 msgid "Legacy (Traditional Post Storage)"
@@ -579,11 +538,8 @@ msgid "here to view debug information"
 msgstr "这里查看调试信息"
 
 #: brazil-cpf-cnpj.php
-msgid ""
-"Please check the field name format. Only letters, numbers and underscores "
-"are allowed, and must start with a letter or underscore."
-msgstr ""
-"请检查字段名格式，只能包含字母、数字和下划线，且必须以字母或下划线开头。"
+msgid "Please check the field name format. Only letters, numbers and underscores are allowed, and must start with a letter or underscore."
+msgstr "请检查字段名格式，只能包含字母、数字和下划线，且必须以字母或下划线开头。"
 
 #: brazil-cpf-cnpj.php
 msgid "Invalid field name format"
@@ -686,6 +642,10 @@ msgid "Related Fields in PostMeta Table (limited to top 20):"
 msgstr "PostMeta表中的相关字段 (限制前20个):"
 
 #: brazil-cpf-cnpj.php
+msgid "Field Name"
+msgstr "字段名"
+
+#: brazil-cpf-cnpj.php
 msgid "Record Count"
 msgstr "记录数"
 
@@ -712,6 +672,10 @@ msgstr "注意: 在HPOS模式下，这些可能是旧的遗留数据。"
 #: brazil-cpf-cnpj.php
 msgid "Current Plugin Configuration:"
 msgstr "当前插件配置:"
+
+#: brazil-cpf-cnpj.php
+msgid "Storage Mode:"
+msgstr "存储模式:"
 
 #: brazil-cpf-cnpj.php
 msgid "High-Performance Order Storage"
