@@ -1848,28 +1848,16 @@ class Brazil_Checkout_Fields_Blocks {
             error_log('Brazil Checkout: Clean document: ' . $clean_document . ' (length: ' . strlen($clean_document) . ')');
             
             if (strlen($clean_document) === 11) {
-                // CPF
+                // CPF - 只保留核心字段
                 error_log('Brazil Checkout: Saving CPF data for order ' . $order_id);
-                $order->update_meta_data('_customer_type', 'pessoa_fisica');
-                $order->update_meta_data('_cpf', $document);
+                $order->update_meta_data('_brazil_customer_type', 'pessoa_fisica');
                 $order->update_meta_data('_brazil_document', $document);
-                $order->update_meta_data('_brazil_document_type', 'cpf');
-                
-                // 也保存无前缀版本
-                $order->update_meta_data('brazil_document', $document);
-                $order->update_meta_data('brazil_document_type', 'cpf');
                 
             } elseif (strlen($clean_document) === 14) {
-                // CNPJ
+                // CNPJ - 只保留核心字段
                 error_log('Brazil Checkout: Saving CNPJ data for order ' . $order_id);
-                $order->update_meta_data('_customer_type', 'pessoa_juridica');
-                $order->update_meta_data('_cnpj', $document);
+                $order->update_meta_data('_brazil_customer_type', 'pessoa_juridica');
                 $order->update_meta_data('_brazil_document', $document);
-                $order->update_meta_data('_brazil_document_type', 'cnpj');
-                
-                // 也保存无前缀版本
-                $order->update_meta_data('brazil_document', $document);
-                $order->update_meta_data('brazil_document_type', 'cnpj');
                 
             } else {
                 error_log('Brazil Checkout: Invalid document length: ' . strlen($clean_document));
@@ -1891,20 +1879,21 @@ class Brazil_Checkout_Fields_Blocks {
             error_log('Brazil Checkout: Full request structure: ' . print_r($request_params, true));
         }
         
-        // 后备兼容性：保存旧字段
-        if (isset($_POST['brazil_cpf']) && !empty($_POST['brazil_cpf'])) {
-            error_log('Brazil Checkout: Saving legacy CPF field');
-            $order->update_meta_data('_customer_type', 'pessoa_fisica');
-            $order->update_meta_data('_cpf', sanitize_text_field($_POST['brazil_cpf']));
-            $order->save();
-        }
+        // 后备兼容性：移除旧字段保存
+        // 不再保存冗余的旧格式字段
+        // if (isset($_POST['brazil_cpf']) && !empty($_POST['brazil_cpf'])) {
+        //     error_log('Brazil Checkout: Saving legacy CPF field');
+        //     $order->update_meta_data('_customer_type', 'pessoa_fisica');
+        //     $order->update_meta_data('_cpf', sanitize_text_field($_POST['brazil_cpf']));
+        //     $order->save();
+        // }
         
-        if (isset($_POST['brazil_cnpj']) && !empty($_POST['brazil_cnpj'])) {
-            error_log('Brazil Checkout: Saving legacy CNPJ field');
-            $order->update_meta_data('_customer_type', 'pessoa_juridica');
-            $order->update_meta_data('_cnpj', sanitize_text_field($_POST['brazil_cnpj']));
-            $order->save();
-        }
+        // if (isset($_POST['brazil_cnpj']) && !empty($_POST['brazil_cnpj'])) {
+        //     error_log('Brazil Checkout: Saving legacy CNPJ field');
+        //     $order->update_meta_data('_customer_type', 'pessoa_juridica');
+        //     $order->update_meta_data('_cnpj', sanitize_text_field($_POST['brazil_cnpj']));
+        //     $order->save();
+        // }
     }
     
     /**
@@ -1939,19 +1928,15 @@ class Brazil_Checkout_Fields_Blocks {
             error_log('Brazil Checkout: Clean document: ' . $clean_document . ' (length: ' . strlen($clean_document) . ')');
             
             if (strlen($clean_document) === 11) {
-                // CPF
+                // CPF - 只保留核心字段
                 error_log('Brazil Checkout: Saving CPF data via update_post_meta');
-                update_post_meta($order_id, '_customer_type', 'pessoa_fisica');
-                update_post_meta($order_id, '_cpf', $document);
+                update_post_meta($order_id, '_brazil_customer_type', 'pessoa_fisica');
                 update_post_meta($order_id, '_brazil_document', $document);
-                update_post_meta($order_id, '_brazil_document_type', 'cpf');
             } elseif (strlen($clean_document) === 14) {
-                // CNPJ
+                // CNPJ - 只保留核心字段
                 error_log('Brazil Checkout: Saving CNPJ data via update_post_meta');
-                update_post_meta($order_id, '_customer_type', 'pessoa_juridica');
-                update_post_meta($order_id, '_cnpj', $document);
+                update_post_meta($order_id, '_brazil_customer_type', 'pessoa_juridica');
                 update_post_meta($order_id, '_brazil_document', $document);
-                update_post_meta($order_id, '_brazil_document_type', 'cnpj');
             } else {
                 error_log('Brazil Checkout: Invalid document length: ' . strlen($clean_document));
             }
@@ -1961,18 +1946,19 @@ class Brazil_Checkout_Fields_Blocks {
             error_log('Brazil Checkout: No document data found in POST');
         }
         
-        // 后备兼容性：保存旧字段
-        if (isset($_POST['brazil_cpf']) && !empty($_POST['brazil_cpf'])) {
-            error_log('Brazil Checkout: Saving legacy CPF field via update_post_meta');
-            update_post_meta($order_id, '_customer_type', 'pessoa_fisica');
-            update_post_meta($order_id, '_cpf', sanitize_text_field($_POST['brazil_cpf']));
-        }
+        // 后备兼容性：移除旧字段保存
+        // 不再保存冗余的旧格式字段
+        // if (isset($_POST['brazil_cpf']) && !empty($_POST['brazil_cpf'])) {
+        //     error_log('Brazil Checkout: Saving legacy CPF field via update_post_meta');
+        //     update_post_meta($order_id, '_customer_type', 'pessoa_fisica');
+        //     update_post_meta($order_id, '_cpf', sanitize_text_field($_POST['brazil_cpf']));
+        // }
         
-        if (isset($_POST['brazil_cnpj']) && !empty($_POST['brazil_cnpj'])) {
-            error_log('Brazil Checkout: Saving legacy CNPJ field via update_post_meta');
-            update_post_meta($order_id, '_customer_type', 'pessoa_juridica');
-            update_post_meta($order_id, '_cnpj', sanitize_text_field($_POST['brazil_cnpj']));
-        }
+        // if (isset($_POST['brazil_cnpj']) && !empty($_POST['brazil_cnpj'])) {
+        //     error_log('Brazil Checkout: Saving legacy CNPJ field via update_post_meta');
+        //     update_post_meta($order_id, '_customer_type', 'pessoa_juridica');
+        //     update_post_meta($order_id, '_cnpj', sanitize_text_field($_POST['brazil_cnpj']));
+        // }
     }
     
     /**
@@ -1994,30 +1980,27 @@ class Brazil_Checkout_Fields_Blocks {
             $clean_document = preg_replace('/[^0-9]/', '', $document);
             
             if (strlen($clean_document) === 11) {
-                // CPF
-                $order->update_meta_data('_customer_type', 'pessoa_fisica');
-                $order->update_meta_data('_cpf', $document);
+                // CPF - 只保留核心字段
+                $order->update_meta_data('_brazil_customer_type', 'pessoa_fisica');
                 $order->update_meta_data('_brazil_document', $document);
-                $order->update_meta_data('_brazil_document_type', 'cpf');
             } elseif (strlen($clean_document) === 14) {
-                // CNPJ
-                $order->update_meta_data('_customer_type', 'pessoa_juridica');
-                $order->update_meta_data('_cnpj', $document);
+                // CNPJ - 只保留核心字段
+                $order->update_meta_data('_brazil_customer_type', 'pessoa_juridica');
                 $order->update_meta_data('_brazil_document', $document);
-                $order->update_meta_data('_brazil_document_type', 'cnpj');
             }
         }
         
-        // 后备兼容性：保存旧字段
-        if (isset($_POST['brazil_cpf']) && !empty($_POST['brazil_cpf'])) {
-            $order->update_meta_data('_customer_type', 'pessoa_fisica');
-            $order->update_meta_data('_cpf', sanitize_text_field($_POST['brazil_cpf']));
-        }
+        // 后备兼容性：移除旧字段保存
+        // 不再保存冗余的旧格式字段
+        // if (isset($_POST['brazil_cpf']) && !empty($_POST['brazil_cpf'])) {
+        //     $order->update_meta_data('_customer_type', 'pessoa_fisica');
+        //     $order->update_meta_data('_cpf', sanitize_text_field($_POST['brazil_cpf']));
+        // }
         
-        if (isset($_POST['brazil_cnpj']) && !empty($_POST['brazil_cnpj'])) {
-            $order->update_meta_data('_customer_type', 'pessoa_juridica');
-            $order->update_meta_data('_cnpj', sanitize_text_field($_POST['brazil_cnpj']));
-        }
+        // if (isset($_POST['brazil_cnpj']) && !empty($_POST['brazil_cnpj'])) {
+        //     $order->update_meta_data('_customer_type', 'pessoa_juridica');
+        //     $order->update_meta_data('_cnpj', sanitize_text_field($_POST['brazil_cnpj']));
+        // }
     }
     
     /**
@@ -2853,38 +2836,26 @@ class Brazil_Checkout_Fields_Blocks {
         
         // 保存数据
         if (strlen($clean_document) === 11) {
-            // CPF
+            // CPF - 只保留核心字段
             error_log('Brazil Checkout: Saving unified CPF data for order ' . $order_id);
             update_post_meta($order_id, '_brazil_document', $document);
-            update_post_meta($order_id, '_brazil_document_type', 'cpf');
-            update_post_meta($order_id, '_customer_type', 'pessoa_fisica');
-            update_post_meta($order_id, '_cpf', $document);
-            
-            // 也保存无前缀版本
-            update_post_meta($order_id, 'brazil_document', $document);
-            update_post_meta($order_id, 'brazil_document_type', 'cpf');
+            update_post_meta($order_id, '_brazil_customer_type', 'pessoa_fisica');
             
             // 清理session数据
             unset($_SESSION['brazil_cpf_cnpj'], $_SESSION['brazil_billing_country'], $_SESSION['brazil_data_timestamp']);
             
-            error_log('Brazil Checkout: CPF saved successfully for order ' . $order_id);
+            error_log('Brazil Checkout: CPF saved successfully for order ' . $order_id . ' (core fields only)');
             return true;
         } elseif (strlen($clean_document) === 14) {
-            // CNPJ
+            // CNPJ - 只保留核心字段
             error_log('Brazil Checkout: Saving unified CNPJ data for order ' . $order_id);
             update_post_meta($order_id, '_brazil_document', $document);
-            update_post_meta($order_id, '_brazil_document_type', 'cnpj');
-            update_post_meta($order_id, '_customer_type', 'pessoa_juridica');
-            update_post_meta($order_id, '_cnpj', $document);
-            
-            // 也保存无前缀版本
-            update_post_meta($order_id, 'brazil_document', $document);
-            update_post_meta($order_id, 'brazil_document_type', 'cnpj');
+            update_post_meta($order_id, '_brazil_customer_type', 'pessoa_juridica');
             
             // 清理session数据
             unset($_SESSION['brazil_cpf_cnpj'], $_SESSION['brazil_billing_country'], $_SESSION['brazil_data_timestamp']);
             
-            error_log('Brazil Checkout: CNPJ saved successfully for order ' . $order_id);
+            error_log('Brazil Checkout: CNPJ saved successfully for order ' . $order_id . ' (core fields only)');
             return true;
         } else {
             error_log('Brazil Checkout: Invalid document length: ' . strlen($clean_document));
@@ -3211,24 +3182,13 @@ class Brazil_Checkout_Fields_Blocks {
         
         error_log('📦 BRAZIL CHECKOUT: Saving to order ' . $order_id);
         
-        // 保存新的统一字段
+        // 只保存核心字段：_brazil_document 和 _brazil_customer_type
         $order->update_meta_data('_brazil_document', $brazil_document);
         $order->update_meta_data('_brazil_customer_type', $brazil_customer_type);
         
-        // 保存旧的兼容字段
-        if ($brazil_cpf) {
-            $order->update_meta_data('_billing_cpf', $brazil_cpf);
-        }
-        if ($brazil_cnpj) {
-            $order->update_meta_data('_billing_cnpj', $brazil_cnpj);
-        }
-        if ($brazil_customer_type) {
-            $order->update_meta_data('_billing_persontype', $brazil_customer_type === 'pessoa_fisica' ? '1' : '2');
-        }
-        
         $order->save();
         
-        error_log('✅ BRAZIL CHECKOUT: Data saved to order ' . $order_id . ' successfully!');
+        error_log('✅ BRAZIL CHECKOUT: Data saved to order ' . $order_id . ' successfully! Only core fields: _brazil_document and _brazil_customer_type');
         return true;
     }
 
