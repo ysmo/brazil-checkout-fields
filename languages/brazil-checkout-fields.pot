@@ -1,14 +1,14 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Brazil Checkout Fields - Translation Template
+# Copyright (C) 2025 ysmo
+# This file is distributed under the same license as the Brazil Checkout Fields plugin.
+# ysmo <ysmo@github.com>, 2025.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-30 20:23+0800\n"
+"Project-Id-Version: Brazil Checkout Fields 1.0\n"
+"Report-Msgid-Bugs-To: https://github.com/ysmo/brazil-checkout-fields/issues\n"
+"POT-Creation-Date: 2025-07-30 20:34+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,724 +17,724 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: brazil-cpf-cnpj.php:2331
+#: brazil-cpf-cnpj.php:2343
 msgid "Informações Fiscais:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2730
+#: brazil-cpf-cnpj.php:2742
 msgid "Current Customer Type Value Distribution"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2732 brazil-cpf-cnpj.php:5000 brazil-cpf-cnpj.php:5035
-#: brazil-cpf-cnpj.php:5053
+#: brazil-cpf-cnpj.php:2744 brazil-cpf-cnpj.php:5012 brazil-cpf-cnpj.php:5047
+#: brazil-cpf-cnpj.php:5065
 msgid "Field Name"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2732
+#: brazil-cpf-cnpj.php:2744
 msgid "Customer Type Value"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2732
+#: brazil-cpf-cnpj.php:2744
 msgid "Order Count"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2732
+#: brazil-cpf-cnpj.php:2744
 msgid "Document Type"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2736
+#: brazil-cpf-cnpj.php:2748
 msgid "No data available"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2741
+#: brazil-cpf-cnpj.php:2753
 msgid "CPF (Individual)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2743
+#: brazil-cpf-cnpj.php:2755
 msgid "CNPJ (Business)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2745
+#: brazil-cpf-cnpj.php:2757
 msgid "CPF (Default)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2747
+#: brazil-cpf-cnpj.php:2759
 msgid "CNPJ (Default)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2749
+#: brazil-cpf-cnpj.php:2761
 msgid "Unknown"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2763 brazil-cpf-cnpj.php:5072
+#: brazil-cpf-cnpj.php:2775 brazil-cpf-cnpj.php:5084
 msgid "Storage Mode:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2763
+#: brazil-cpf-cnpj.php:2775
 msgid "HPOS (High-Performance Order Storage)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2763
+#: brazil-cpf-cnpj.php:2775
 msgid "Legacy (Traditional Post Storage)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:2770
+#: brazil-cpf-cnpj.php:2782
 msgid "Error occurred while previewing data: "
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3589
+#: brazil-cpf-cnpj.php:3601
 msgid ""
 "Customer type field name format is invalid. Only letters, numbers and "
 "underscores are allowed, and must start with a letter or underscore."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3591
+#: brazil-cpf-cnpj.php:3603
 msgid ""
 "Document field name format is invalid. Only letters, numbers and underscores "
 "are allowed, and must start with a letter or underscore."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3593 brazil-cpf-cnpj.php:4165
+#: brazil-cpf-cnpj.php:3605 brazil-cpf-cnpj.php:4177
 msgid "Customer type values cannot be empty."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3604
+#: brazil-cpf-cnpj.php:3616
 msgid ""
 "Settings saved! Cache cleared, statistics will be recalculated using new "
 "customer type values."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3619
+#: brazil-cpf-cnpj.php:3631
 msgid ""
 "Settings have been reset to default values! Cache cleared, statistics will "
 "be recalculated."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3628
+#: brazil-cpf-cnpj.php:3640
 msgid "Brazil CPF/CNPJ Configuration"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3633
+#: brazil-cpf-cnpj.php:3645
 msgid "Field Name Customization Feature"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3633
+#: brazil-cpf-cnpj.php:3645
 msgid "This plugin supports custom database field names"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3643
+#: brazil-cpf-cnpj.php:3655
 msgid "Customer Type Field Name"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3653 brazil-cpf-cnpj.php:3706
+#: brazil-cpf-cnpj.php:3665 brazil-cpf-cnpj.php:3718
 msgid ""
 "Only letters, numbers and underscores are allowed, and must start with a "
 "letter or underscore"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3655
+#: brazil-cpf-cnpj.php:3667
 msgid "Field name for storing customer type values"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3656 brazil-cpf-cnpj.php:3709
+#: brazil-cpf-cnpj.php:3668 brazil-cpf-cnpj.php:3721
 msgid "Current effective field name:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3662
+#: brazil-cpf-cnpj.php:3674
 msgid "CPF Customer Type Value"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3672
+#: brazil-cpf-cnpj.php:3684
 msgid "Value saved in customer type field when user enters CPF"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3673 brazil-cpf-cnpj.php:3690
+#: brazil-cpf-cnpj.php:3685 brazil-cpf-cnpj.php:3702
 msgid "Current value:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3679
+#: brazil-cpf-cnpj.php:3691
 msgid "CNPJ Customer Type Value"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3689
+#: brazil-cpf-cnpj.php:3701
 msgid "Value saved in customer type field when user enters CNPJ"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3696
+#: brazil-cpf-cnpj.php:3708
 msgid "Document Field Name"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3708
+#: brazil-cpf-cnpj.php:3720
 msgid "Stores formatted CPF/CNPJ numbers"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3714
+#: brazil-cpf-cnpj.php:3726
 msgid "Plugin Version"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3715
+#: brazil-cpf-cnpj.php:3727
 msgid "2.4.0 - Brazil CPF/CNPJ supports backend field name configuration"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3721
+#: brazil-cpf-cnpj.php:3733
 msgid "Save Settings"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3723
+#: brazil-cpf-cnpj.php:3735
 msgid "Reset to Defaults"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3734
+#: brazil-cpf-cnpj.php:3746
 msgid "Important Notice:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3736
+#: brazil-cpf-cnpj.php:3748
 msgid ""
 "After changing field names, new orders will use the new field names to save "
 "data"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3737
+#: brazil-cpf-cnpj.php:3749
 msgid ""
 "Existing order data will not be automatically migrated to new field names"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3738
+#: brazil-cpf-cnpj.php:3750
 msgid ""
 "It is recommended to test in a staging environment before using in production"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3739
+#: brazil-cpf-cnpj.php:3751
 msgid ""
 "Field names can only contain letters, numbers and underscores, and must "
 "start with a letter or underscore"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3743
+#: brazil-cpf-cnpj.php:3755
 msgid "Data Migration Tool"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3745
+#: brazil-cpf-cnpj.php:3757
 msgid ""
 "If you have changed field names, you can use the following tool to migrate "
 "existing order data to new fields:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3755
+#: brazil-cpf-cnpj.php:3767
 msgid "Migration Source Fields"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3758
+#: brazil-cpf-cnpj.php:3770
 msgid "Customer Type Source Field:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3762
+#: brazil-cpf-cnpj.php:3774
 msgid "Document Source Field:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3768
+#: brazil-cpf-cnpj.php:3780
 msgid "Migration Target Fields"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3771
+#: brazil-cpf-cnpj.php:3783
 msgid "Customer Type Target Field:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3775
+#: brazil-cpf-cnpj.php:3787
 msgid "Document Target Field:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3783
+#: brazil-cpf-cnpj.php:3795
 msgid "Start Data Migration"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3798
+#: brazil-cpf-cnpj.php:3810
 msgid "🔄 Customer Type Value Migration Tool"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3800
+#: brazil-cpf-cnpj.php:3812
 msgid "Customer Type Value Migration Feature"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3800
+#: brazil-cpf-cnpj.php:3812
 msgid ""
 "Use this tool to update existing order data when you have modified CPF or "
 "CNPJ customer type values."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3801
+#: brazil-cpf-cnpj.php:3813
 msgid "Use Case:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3801
+#: brazil-cpf-cnpj.php:3813
 msgid ""
 "For example, when changing \"pessoa_fisica\" to \"individual\", or "
 "\"pessoa_juridica\" to \"company\"."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3812
+#: brazil-cpf-cnpj.php:3824
 msgid "Original CPF Customer Type Value"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3816
+#: brazil-cpf-cnpj.php:3828
 msgid "Old CPF customer type value to be replaced (e.g.: pessoa_fisica)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3821
+#: brazil-cpf-cnpj.php:3833
 msgid "New CPF Customer Type Value"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3825
+#: brazil-cpf-cnpj.php:3837
 #, php-format
 msgid "New CPF customer type value (current configuration: %s)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3830
+#: brazil-cpf-cnpj.php:3842
 msgid "Original CNPJ Customer Type Value"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3834
+#: brazil-cpf-cnpj.php:3846
 msgid "Old CNPJ customer type value to be replaced (e.g.: pessoa_juridica)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3839
+#: brazil-cpf-cnpj.php:3851
 msgid "New CNPJ Customer Type Value"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3843
+#: brazil-cpf-cnpj.php:3855
 #, php-format
 msgid "New CNPJ customer type value (current configuration: %s)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3848
+#: brazil-cpf-cnpj.php:3860
 msgid "Migration Options"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3853
+#: brazil-cpf-cnpj.php:3865
 msgid "Migrate all historical orders (including orders using default values)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3855
+#: brazil-cpf-cnpj.php:3867
 msgid "Check this to also migrate orders using default customer type values"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3862
+#: brazil-cpf-cnpj.php:3874
 msgid "⚠️ Important Notice:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3864
+#: brazil-cpf-cnpj.php:3876
 msgid "This operation will bulk update customer type values in orders"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3865
+#: brazil-cpf-cnpj.php:3877
 msgid "It is recommended to backup the database before execution"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3866
+#: brazil-cpf-cnpj.php:3878
 msgid "A detailed migration report will be displayed after completion"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3867
+#: brazil-cpf-cnpj.php:3879
 msgid "If unsure, please test in a staging environment first"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3872
+#: brazil-cpf-cnpj.php:3884
 msgid "📊 Data Preview"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3873
+#: brazil-cpf-cnpj.php:3885
 msgid ""
 "Click the button to view current customer type value distribution in the "
 "database:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3874 brazil-cpf-cnpj.php:3902
+#: brazil-cpf-cnpj.php:3886 brazil-cpf-cnpj.php:3914
 msgid "Preview Data"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3878
+#: brazil-cpf-cnpj.php:3890
 msgid "Start Customer Type Value Migration"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3887
+#: brazil-cpf-cnpj.php:3899
 msgid "Loading..."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3897
+#: brazil-cpf-cnpj.php:3909
 msgid "Unable to load data preview:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3900
+#: brazil-cpf-cnpj.php:3912
 msgid "Error occurred while loading data preview"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3920
+#: brazil-cpf-cnpj.php:3932
 msgid ""
 "Cache cleared, data will be reloaded. Page will refresh automatically..."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3925
+#: brazil-cpf-cnpj.php:3937
 msgid "📊 Recent Order Data"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3931
+#: brazil-cpf-cnpj.php:3943
 msgid ""
 "If data is not displaying correctly, you can clear cache to force reload:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3932
+#: brazil-cpf-cnpj.php:3944
 msgid "Clear Cache"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3943
+#: brazil-cpf-cnpj.php:3955
 msgid "🇧🇷 Total Orders"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3945
+#: brazil-cpf-cnpj.php:3957
 msgid "All Brazil orders"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3948
+#: brazil-cpf-cnpj.php:3960
 msgid "👤 CPF Orders"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3950
+#: brazil-cpf-cnpj.php:3962
 msgid "Individual customers"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3953
+#: brazil-cpf-cnpj.php:3965
 msgid "🏢 CNPJ Orders"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3955
+#: brazil-cpf-cnpj.php:3967
 msgid "Business customers"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3958
+#: brazil-cpf-cnpj.php:3970
 msgid "⚙️ Current Field"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3966
+#: brazil-cpf-cnpj.php:3978
 msgid "🔧 Current Field Configuration"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3969 brazil-cpf-cnpj.php:4063
+#: brazil-cpf-cnpj.php:3981 brazil-cpf-cnpj.php:4075
 msgid "Customer Type Field:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3973 brazil-cpf-cnpj.php:4063
+#: brazil-cpf-cnpj.php:3985 brazil-cpf-cnpj.php:4075
 msgid "Document Field:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3977
+#: brazil-cpf-cnpj.php:3989
 msgid "Order Storage Mode:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3988
+#: brazil-cpf-cnpj.php:4000
 msgid "(High-Performance Order Storage)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:3990
+#: brazil-cpf-cnpj.php:4002
 msgid "(Legacy Post Storage)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4002
+#: brazil-cpf-cnpj.php:4014
 msgid "Debug Information"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4008
+#: brazil-cpf-cnpj.php:4020
 msgid "Tip:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4008
+#: brazil-cpf-cnpj.php:4020
 msgid "If data display is incorrect, please click"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4008
+#: brazil-cpf-cnpj.php:4020
 msgid "here to view debug information"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4022
+#: brazil-cpf-cnpj.php:4034
 msgid "Invalid field name format"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4046
+#: brazil-cpf-cnpj.php:4058
 msgid ""
 "Please check the field name format. Only letters, numbers and underscores "
 "are allowed, and must start with a letter or underscore."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4053
+#: brazil-cpf-cnpj.php:4065
 msgid "Are you sure you want to reset to default configuration?"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4053
+#: brazil-cpf-cnpj.php:4065
 msgid "Customer Type Field: _brazil_customer_type"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4053
+#: brazil-cpf-cnpj.php:4065
 msgid "Document Field: _brazil_document"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4053
+#: brazil-cpf-cnpj.php:4065
 msgid "CPF Customer Type Value: pessoa_fisica"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4053
+#: brazil-cpf-cnpj.php:4065
 msgid "CNPJ Customer Type Value: pessoa_juridica"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4053
+#: brazil-cpf-cnpj.php:4065
 msgid "This operation will take effect immediately."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4063
+#: brazil-cpf-cnpj.php:4075
 msgid "Field Name Preview:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4098
+#: brazil-cpf-cnpj.php:4110
 msgid "Migration field name format is invalid."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4138
+#: brazil-cpf-cnpj.php:4150
 #, php-format
 msgid "Data migration completed! Successfully migrated %d orders."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4143
+#: brazil-cpf-cnpj.php:4155
 #, php-format
 msgid "%d orders had errors during migration."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4148
+#: brazil-cpf-cnpj.php:4160
 msgid "No data found to migrate."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4201
+#: brazil-cpf-cnpj.php:4213
 msgid "Error occurred during migration: "
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4208
+#: brazil-cpf-cnpj.php:4220
 #, php-format
 msgid ""
 "Customer type value migration completed! Total migrated %d orders (CPF: %d, "
 "CNPJ: %d)."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4218
+#: brazil-cpf-cnpj.php:4230
 msgid "Migration Details:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4231
+#: brazil-cpf-cnpj.php:4243
 #, php-format
 msgid ""
 "%d orders had errors during migration. Please check error logs for details."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4236
+#: brazil-cpf-cnpj.php:4248
 msgid ""
 "No customer type value data found to migrate. All orders may already be "
 "using new customer type values."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4279 brazil-cpf-cnpj.php:4350
+#: brazil-cpf-cnpj.php:4291 brazil-cpf-cnpj.php:4362
 #, php-format
 msgid "CPF customer type value: updated from '%s' to '%s' - %d orders"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4299 brazil-cpf-cnpj.php:4370
+#: brazil-cpf-cnpj.php:4311 brazil-cpf-cnpj.php:4382
 #, php-format
 msgid "CNPJ customer type value: updated from '%s' to '%s' - %d orders"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4817
+#: brazil-cpf-cnpj.php:4829
 msgid "Order ID"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4817
+#: brazil-cpf-cnpj.php:4829
 msgid "Customer Type"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4817
+#: brazil-cpf-cnpj.php:4829
 msgid "Document Number"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4817
+#: brazil-cpf-cnpj.php:4829
 msgid "Order Status"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4817
+#: brazil-cpf-cnpj.php:4829
 msgid "Creation Date"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4833
+#: brazil-cpf-cnpj.php:4845
 msgid "Current Field"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4840
+#: brazil-cpf-cnpj.php:4852
 msgid "Legacy Field"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4848
+#: brazil-cpf-cnpj.php:4860
 msgid "CPF Field"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4852
+#: brazil-cpf-cnpj.php:4864
 msgid "CNPJ Field"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4862 brazil-cpf-cnpj.php:4868
+#: brazil-cpf-cnpj.php:4874 brazil-cpf-cnpj.php:4880
 msgid "Pessoa Física"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4864 brazil-cpf-cnpj.php:4868
+#: brazil-cpf-cnpj.php:4876 brazil-cpf-cnpj.php:4880
 msgid "Pessoa Jurídica"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4886
+#: brazil-cpf-cnpj.php:4898
 msgid "Current Field:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4890
+#: brazil-cpf-cnpj.php:4902
 msgid "No orders found with Brazil field data."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4894
+#: brazil-cpf-cnpj.php:4906
 msgid "Error loading order data, please try again later."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4913
+#: brazil-cpf-cnpj.php:4925
 msgid "Administrator permissions required to view debug information."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4925
+#: brazil-cpf-cnpj.php:4937
 msgid "WooCommerce Storage Mode Detection:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4929
+#: brazil-cpf-cnpj.php:4941
 msgid "Detection Process:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4934
+#: brazil-cpf-cnpj.php:4946
 msgid "WC Settings Detection:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4942
+#: brazil-cpf-cnpj.php:4954
 msgid "Database Tables Detection:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4944 brazil-cpf-cnpj.php:4945
+#: brazil-cpf-cnpj.php:4956 brazil-cpf-cnpj.php:4957
 msgid "table exists:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4944 brazil-cpf-cnpj.php:4945
+#: brazil-cpf-cnpj.php:4956 brazil-cpf-cnpj.php:4957
 msgid "Yes"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4944 brazil-cpf-cnpj.php:4945
+#: brazil-cpf-cnpj.php:4956 brazil-cpf-cnpj.php:4957
 msgid "No"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4949 brazil-cpf-cnpj.php:4954
+#: brazil-cpf-cnpj.php:4961 brazil-cpf-cnpj.php:4966
 msgid "record count:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4960
+#: brazil-cpf-cnpj.php:4972
 msgid "WC OrderUtil Class:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4960
+#: brazil-cpf-cnpj.php:4972
 msgid "Available"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4960
+#: brazil-cpf-cnpj.php:4972
 msgid "Not Available"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4965
+#: brazil-cpf-cnpj.php:4977
 msgid "OrderUtil Detection Result:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4965
+#: brazil-cpf-cnpj.php:4977
 msgid "HPOS Enabled"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4965
+#: brazil-cpf-cnpj.php:4977
 msgid "HPOS Not Enabled"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4967
+#: brazil-cpf-cnpj.php:4979
 msgid "OrderUtil Detection Error:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4974
+#: brazil-cpf-cnpj.php:4986
 msgid "Final Result: High-Performance Order Storage (HPOS)"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4975 brazil-cpf-cnpj.php:4978
+#: brazil-cpf-cnpj.php:4987 brazil-cpf-cnpj.php:4990
 msgid "Data stored in:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4975 brazil-cpf-cnpj.php:4978
+#: brazil-cpf-cnpj.php:4987 brazil-cpf-cnpj.php:4990
 msgid "and"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4975 brazil-cpf-cnpj.php:4978
+#: brazil-cpf-cnpj.php:4987 brazil-cpf-cnpj.php:4990
 msgid "tables"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4977
+#: brazil-cpf-cnpj.php:4989
 msgid "Final Result: Legacy Post Storage"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:4984
+#: brazil-cpf-cnpj.php:4996
 msgid "Related Fields in HPOS Tables (limited to top 20):"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:5000 brazil-cpf-cnpj.php:5035 brazil-cpf-cnpj.php:5053
+#: brazil-cpf-cnpj.php:5012 brazil-cpf-cnpj.php:5047 brazil-cpf-cnpj.php:5065
 msgid "Record Count"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:5000 brazil-cpf-cnpj.php:5035 brazil-cpf-cnpj.php:5053
+#: brazil-cpf-cnpj.php:5012 brazil-cpf-cnpj.php:5047 brazil-cpf-cnpj.php:5065
 msgid "Unique Orders"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:5012
+#: brazil-cpf-cnpj.php:5024
 msgid "No related fields found in HPOS tables."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:5016
+#: brazil-cpf-cnpj.php:5028
 msgid "Related Fields in PostMeta Table (limited to top 20):"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:5047
+#: brazil-cpf-cnpj.php:5059
 msgid "No related fields found in PostMeta table."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:5051
+#: brazil-cpf-cnpj.php:5063
 msgid "Legacy Data in PostMeta Table (for comparison only):"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:5064
+#: brazil-cpf-cnpj.php:5076
 msgid "Note: In HPOS mode, these may be old legacy data."
 msgstr ""
 
-#: brazil-cpf-cnpj.php:5067
+#: brazil-cpf-cnpj.php:5079
 msgid "Current Plugin Configuration:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:5071
+#: brazil-cpf-cnpj.php:5083
 msgid "Plugin Version:"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:5072
+#: brazil-cpf-cnpj.php:5084
 msgid "High-Performance Order Storage"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:5072
+#: brazil-cpf-cnpj.php:5084
 msgid "Legacy Post Storage"
 msgstr ""
 
-#: brazil-cpf-cnpj.php:5076
+#: brazil-cpf-cnpj.php:5088
 msgid "Debug information loading error:"
 msgstr ""

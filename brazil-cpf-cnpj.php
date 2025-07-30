@@ -1,8 +1,20 @@
 <?php
 /**
- * Plugin Name: Brazil CPF/CNPJ
- * Description: Brazilian CPF/CNPJ fields for WooCommerce Block Editor - Smart input validation with configurable field names
- * Version: 2.4.0
+ * Plugin Name: Brazil Checkout Fields
+ * Plugin URI: https://github.com/ysmo/brazil-checkout-fields
+ * Description: Brazilian CPF/CNPJ validation fields for WooCommerce checkout with smart document detection and multi-language support
+ * Version: 1.0
+ * Author: ysmo
+ * Author URI: https://github.com/ysmo
+ * License: GPL v2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: brazil-checkout-fields
+ * Domain Path: /languages
+ * Requires at least: 5.0
+ * Tested up to: 6.4
+ * Requires PHP: 7.4
+ * WC requires at least: 6.0
+ * WC tested up to: 8.5
  */
 
 if (!defined('ABSPATH')) exit;

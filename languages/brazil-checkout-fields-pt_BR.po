@@ -1,15 +1,15 @@
 # Brazil Checkout Fields Brazilian Portuguese Translation
-# Copyright (C) 2025
+# Copyright (C) 2025 ysmo
 # This file is distributed under the same license as the Brazil Checkout Fields package.
-# Translator: Admin, 2025.
+# Translator: ysmo, 2025.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Brazil Checkout Fields 2.4.0\n"
-"Report-Msgid-Bugs-To: \n"
+"Project-Id-Version: Brazil Checkout Fields 1.0\n"
+"Report-Msgid-Bugs-To: https://github.com/ysmo/brazil-checkout-fields/issues\n"
 "POT-Creation-Date: 2025-01-01 12:00+0000\n"
 "PO-Revision-Date: 2025-01-01 12:00+0000\n"
-"Last-Translator: Admin\n"
+"Last-Translator: ysmo\n"
 "Language-Team: Portuguese (Brazil)\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"

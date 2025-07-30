@@ -1,286 +1,316 @@
 # Brazil Checkout Fields
 
-A WordPress/WooCommerce plugin for handling Brazilian CPF/CNPJ validation and checkout fields with configurable field names and customer type values.
+[🇺🇸 English](#english) | [🇧🇷 Português](#português) | [🇨🇳 中文](#中文)
 
-## Features
+Um plugin WordPress/WooCommerce para validação de CPF/CNPJ em campos de checkout brasileiros.
 
-- ✅ **CPF/CNPJ Validation**: Real-time validation of Brazilian tax documents
-- ✅ **Store API Support**: Full compatibility with WooCommerce Block Editor
-- ✅ **Configurable Field Names**: Customize database field names through admin panel
-- ✅ **Customer Type Values**: Configure CPF/CNPJ customer type values
-- ✅ **Data Migration Tools**: Migrate existing order data between field configurations
-- ✅ **HPOS Compatibility**: Supports both HPOS and Legacy order storage
-- ✅ **Session Management**: Persistent cart data across page loads
-- ✅ **Statistics Dashboard**: View order statistics and recent data
-- ✅ **Internationalization**: Multi-language support (Portuguese, Chinese, English)
-
-## Installation
-
-1. Upload the plugin files to `/wp-content/plugins/brazil-checkout-fields/`
-2. Activate the plugin through the WordPress admin panel
-3. Configure field names and customer type values in WooCommerce → Brazil CPF/CNPJ
-
-## Configuration
-
-### Field Name Settings
-
-- **Customer Type Field**: Database field name for storing customer type (default: `_brazil_customer_type`)
-- **Document Field**: Database field name for storing formatted CPF/CNPJ (default: `_brazil_document`)
-- **CPF Customer Type Value**: Value saved when user enters CPF (default: `pessoa_fisica`)
-- **CNPJ Customer Type Value**: Value saved when user enters CNPJ (default: `pessoa_juridica`)
-
-### Data Migration
-
-If you change field names or customer type values, use the migration tools to update existing order data:
-
-1. **Field Migration**: Migrate data from old field names to new ones
-2. **Customer Type Migration**: Update customer type values in existing orders
-
-## Internationalization
-
-The plugin supports multiple languages through WordPress's translation system with complete interface translations.
-
-### Available Languages
-
-- 🇺🇸 **English** (default) - `en_US`
-- 🇧🇷 **Português (Brasil)** - `pt_BR` (Brazilian Portuguese)
-- 🇨🇳 **中文 (简体)** - `zh_CN` (Chinese Simplified)
-
-### Language Files Structure
-
-```
-languages/
-├── brazil-checkout-fields.pot          # Translation template
-├── brazil-checkout-fields-pt_BR.po     # Brazilian Portuguese source
-├── brazil-checkout-fields-pt_BR.mo     # Brazilian Portuguese compiled
-├── brazil-checkout-fields-zh_CN.po     # Chinese Simplified source
-└── brazil-checkout-fields-zh_CN.mo     # Chinese Simplified compiled
-```
-
-### Language Activation
-
-The plugin automatically loads the appropriate language based on your WordPress site's configured language. To use a specific language:
-
-1. Go to **Settings → General** in WordPress admin
-2. Set **Site Language** to your preferred language
-3. The plugin will automatically load the corresponding translation
-
-### Adding New Translations
-
-1. Use the template file: `languages/brazil-checkout-fields.pot`
-2. Create your translation file: `languages/brazil-checkout-fields-{locale}.po`
-3. Translate all strings in the PO file
-4. Compile to binary format using msgfmt:
-   ```bash
-   msgfmt brazil-checkout-fields-{locale}.po -o brazil-checkout-fields-{locale}.mo
-   ```
-
-### Translation Coverage
-
-All user-facing elements are fully translatable:
-
-- ✅ Admin interface labels and buttons
-- ✅ Form field labels and placeholders
-- ✅ Validation error messages
-- ✅ Success confirmation messages
-- ✅ Migration tool messages
-- ✅ Debug information interface
-- ✅ JavaScript alert messages
-- ✅ Order data display labels
-
-### Text Domain
-
-All translatable strings use the text domain: `brazil-checkout-fields`
-
-## API Integration
-
-### Store API Endpoints
-
-The plugin automatically integrates with WooCommerce Store API for block-based checkout:
-
-```javascript
-// Store API automatically handles these fields:
-wp.data.select("wc/store/cart").getCartData().extensions.brazil_checkout;
-```
-
-### Session Data
-
-Cart session data is automatically managed:
-
-```php
-// Get session data
-$session_data = WC()->session->get('brazil_checkout_data');
-
-// Set session data
-WC()->session->set('brazil_checkout_data', $data);
-```
-
-## Technical Details
-
-### Storage Compatibility
-
-- **HPOS Mode**: Uses `wp_wc_orders_meta` table
-- **Legacy Mode**: Uses `wp_postmeta` table
-- **Auto-detection**: Automatically detects and uses appropriate storage method
-
-### Field Validation
-
-- Field names must match pattern: `/^[a-zA-Z_][a-zA-Z0-9_]*$/`
-- CPF: 11 digits with validation algorithm
-- CNPJ: 14 digits with validation algorithm
-
-### Caching
-
-- Statistics data cached for 12 hours
-- Recent orders cached for 5 minutes
-- Manual cache clearing available in admin panel
-
-## Version History
-
-### 2.4.0
-
-- ✅ **Complete Internationalization**: Full multi-language support
-- ✅ **Brazilian Portuguese**: Native pt_BR translation included
-- ✅ **Chinese Simplified**: Complete zh_CN translation included
-- ✅ **Translation Template**: POT file for adding new languages
-- ✅ **Admin Interface**: Fully translatable administration panel
-- ✅ **JavaScript Messages**: Internationalized client-side validation
-- ✅ **Migration Tools**: Multilingual migration interface
-- ✅ **Debug Interface**: Translated debug information panel
-- ✅ **Enhanced User Experience**: Language-appropriate error messages
-
-### Previous Versions
-
-- Store API integration and session management
-- Configurable field names and customer type values
-- Data migration tools
-- HPOS compatibility
-- Statistics dashboard
-
-## Support
-
-For issues and feature requests, please check the plugin documentation or contact support.
-
-## License
-
-This plugin is licensed under the GPL v2 or later.
+**Versão:** 1.0  
+**Autor:** ysmo  
+**Licença:** GPL v2 ou posterior
 
 ---
 
-**Note**: This plugin is specifically designed for Brazilian e-commerce requirements and includes validation for CPF (Cadastro de Pessoas Físicas) and CNPJ (Cadastro Nacional da Pessoa Jurídica) tax documents.
+## English
 
-### 技术特性
+### Description
 
-#### 客户端验证
+A comprehensive WordPress/WooCommerce plugin designed specifically for Brazilian e-commerce stores. Automatically adds CPF/CNPJ validation fields to the checkout process with intelligent document type detection and real-time validation.
 
-- ✅ 实时 CPF/CNPJ 算法验证
-- ✅ 自动格式化输入
-- ✅ 智能类型检测
-- ✅ 表单提交前验证
-- ✅ 错误提示和成功反馈
+### Key Features
 
-#### 服务端验证
+- ✅ **Smart Document Detection**: Automatically detects CPF or CNPJ based on input
+- ✅ **Real-time Validation**: Instant validation using official Brazilian algorithms
+- ✅ **WooCommerce Block Support**: Full compatibility with modern block-based checkout
+- ✅ **HPOS Compatible**: Supports High-Performance Order Storage
+- ✅ **Multi-language Support**: Available in English, Portuguese, and Chinese
+- ✅ **Configurable Fields**: Customizable field names and values
+- ✅ **Data Migration Tools**: Easy migration between field configurations
+- ✅ **Admin Dashboard**: Statistics and management interface
 
-- ✅ 后端 CPF/CNPJ 算法验证
-- ✅ 多层验证钩子保护
-- ✅ 数据清理和验证
-- ✅ 错误消息本地化
+### Installation
 
-#### 数据存储
+1. **Download** the plugin files
+2. **Upload** to `/wp-content/plugins/brazil-checkout-fields/`
+3. **Activate** the plugin in WordPress admin panel
+4. **Configure** settings in WooCommerce → Brazil CPF/CNPJ
 
-- ✅ 新的统一字段：`brazil_document`
-- ✅ 自动类型检测存储
-- ✅ 向后兼容旧字段结构
-- ✅ HPOS（高性能订单存储）兼容
+### Configuration
 
-#### WooCommerce 集成
+#### Basic Settings
 
-- ✅ 块编辑器兼容
-- ✅ 传统结账页面兼容
-- ✅ 多种插入位置支持
-- ✅ 订单详情显示
-- ✅ 后台订单管理显示
+Navigate to **WooCommerce → Brazil CPF/CNPJ** to configure:
 
-### 用户体验改进
+- **Customer Type Field**: Database field name (default: `_brazil_customer_type`)
+- **Document Field**: Field for storing CPF/CNPJ (default: `_brazil_document`)
+- **CPF Value**: Value for individual customers (default: `pessoa_fisica`)
+- **CNPJ Value**: Value for business customers (default: `pessoa_juridica`)
 
-**之前的用户流程：**
+#### Advanced Configuration
 
-1. 选择客户类型（个人/企业）
-2. 在对应的输入框中输入 CPF 或 CNPJ
+For developers, you can override field names using constants:
 
-**现在的用户流程：**
-
-1. 在单个输入框中输入 CPF 或 CNPJ
-2. 系统自动识别类型并格式化
-3. 实时验证反馈
-
-### 技术实现细节
-
-#### 智能检测逻辑
-
-```javascript
-detectDocumentType: function(value) {
-    var cleanValue = value.replace(/[^0-9]/g, '');
-    if (cleanValue.length <= 11) {
-        return 'cpf';
-    } else {
-        return 'cnpj';
-    }
-}
+```php
+// Add to your theme's functions.php
+define('BRAZIL_CUSTOMER_TYPE_FIELD', '_custom_customer_type');
+define('BRAZIL_DOCUMENT_FIELD', '_custom_document');
 ```
 
-#### 自动格式化
+### Usage
 
-- **CPF**: 根据输入长度动态添加点和横线
-- **CNPJ**: 根据输入长度动态添加点、斜线和横线
-- **最大长度限制**: CPF 14 字符，CNPJ 18 字符
+1. **Customer Experience**: Users simply enter their CPF or CNPJ in a single field
+2. **Automatic Detection**: Plugin detects document type automatically
+3. **Real-time Validation**: Instant feedback on document validity
+4. **Order Storage**: Valid documents are stored with the order
 
-#### 验证算法
+### Language Support
 
-保持原有的巴西官方 CPF 和 CNPJ 验证算法，确保 100%准确性。
+The plugin automatically adapts to your WordPress language setting:
 
-### 安装和使用
+- **English** (en_US) - Default
+- **Portuguese** (pt_BR) - Brazilian Portuguese
+- **Chinese** (zh_CN) - Simplified Chinese
 
-1. 上传插件文件到 `/wp-content/plugins/` 目录
-2. 在 WordPress 后台激活插件
-3. 插件会自动在 WooCommerce 结账页面添加巴西文档字段
-4. 用户只需在一个输入框中输入 CPF 或 CNPJ 即可
+To change language: **Settings → General → Site Language**
 
-### 兼容性
+### Requirements
 
-- **WordPress**: 5.0+
-- **WooCommerce**: 5.0+
-- **PHP**: 7.4+
-- **WooCommerce 块编辑器**: 完全支持
-- **HPOS**: 完全兼容
+- WordPress 5.0+
+- WooCommerce 6.0+
+- PHP 7.4+
 
-### 更新日志
+---
 
-#### 版本 2.3.0
+## Português
 
-- 🎉 简化为单一智能输入框
-- 🚀 自动 CPF/CNPJ 类型检测
-- ✨ 改进用户体验
-- 🔧 保持完全向后兼容
-- 🐛 修复边缘案例验证问题
+### Descrição
 
-#### 版本 2.2.0
+Plugin WordPress/WooCommerce desenvolvido especificamente para lojas brasileiras. Adiciona automaticamente campos de validação CPF/CNPJ ao processo de checkout com detecção inteligente do tipo de documento e validação em tempo real.
 
-- 块编辑器支持
-- HPOS 兼容性
-- 多层验证保护
+### Recursos Principais
 
-### 开发者说明
+- ✅ **Detecção Inteligente**: Detecta automaticamente CPF ou CNPJ baseado na entrada
+- ✅ **Validação em Tempo Real**: Validação instantânea usando algoritmos oficiais brasileiros
+- ✅ **Suporte a Blocos**: Compatibilidade total com checkout baseado em blocos
+- ✅ **Compatível com HPOS**: Suporta Armazenamento de Pedidos de Alta Performance
+- ✅ **Suporte Multi-idioma**: Disponível em inglês, português e chinês
+- ✅ **Campos Configuráveis**: Nomes de campos e valores personalizáveis
+- ✅ **Ferramentas de Migração**: Migração fácil entre configurações de campos
+- ✅ **Painel Administrativo**: Interface de estatísticas e gerenciamento
 
-该插件现在使用新的字段结构：
+### Instalação
 
-- `brazil_document`: 统一的文档输入
-- `_brazil_document_type`: 自动检测的类型（cpf/cnpj）
-- `_brazil_document`: 存储的文档值
+1. **Baixe** os arquivos do plugin
+2. **Faça upload** para `/wp-content/plugins/brazil-checkout-fields/`
+3. **Ative** o plugin no painel administrativo do WordPress
+4. **Configure** as opções em WooCommerce → Brazil CPF/CNPJ
 
-同时保持旧字段的兼容性：
+### Configuração
 
-- `brazil_customer_type`, `brazil_cpf`, `brazil_cnpj`
-- `_customer_type`, `_cpf`, `_cnpj`
+#### Configurações Básicas
 
-这确保了从旧版本的无缝升级。
+Navegue até **WooCommerce → Brazil CPF/CNPJ** para configurar:
+
+- **Campo Tipo de Cliente**: Nome do campo no banco (padrão: `_brazil_customer_type`)
+- **Campo Documento**: Campo para armazenar CPF/CNPJ (padrão: `_brazil_document`)
+- **Valor CPF**: Valor para clientes pessoa física (padrão: `pessoa_fisica`)
+- **Valor CNPJ**: Valor para clientes pessoa jurídica (padrão: `pessoa_juridica`)
+
+#### Configuração Avançada
+
+Para desenvolvedores, você pode sobrescrever nomes de campos usando constantes:
+
+```php
+// Adicione ao functions.php do seu tema
+define('BRAZIL_CUSTOMER_TYPE_FIELD', '_tipo_cliente_customizado');
+define('BRAZIL_DOCUMENT_FIELD', '_documento_customizado');
+```
+
+### Como Usar
+
+1. **Experiência do Cliente**: Usuários simplesmente inserem seu CPF ou CNPJ em um único campo
+2. **Detecção Automática**: Plugin detecta o tipo de documento automaticamente
+3. **Validação em Tempo Real**: Feedback instantâneo sobre a validade do documento
+4. **Armazenamento**: Documentos válidos são armazenados com o pedido
+
+### Suporte de Idiomas
+
+O plugin se adapta automaticamente à configuração de idioma do WordPress:
+
+- **Inglês** (en_US) - Padrão
+- **Português** (pt_BR) - Português Brasileiro
+- **Chinês** (zh_CN) - Chinês Simplificado
+
+Para alterar idioma: **Configurações → Geral → Idioma do Site**
+
+### Requisitos
+
+- WordPress 5.0+
+- WooCommerce 6.0+
+- PHP 7.4+
+
+---
+
+## 中文
+
+### 描述
+
+专为巴西电子商务商店设计的 WordPress/WooCommerce 插件。自动添加 CPF/CNPJ 验证字段到结账流程，具有智能文档类型检测和实时验证功能。
+
+### 主要功能
+
+- ✅ **智能文档检测**: 根据输入自动检测 CPF 或 CNPJ
+- ✅ **实时验证**: 使用巴西官方算法进行即时验证
+- ✅ **区块支持**: 完全兼容现代基于区块的结账
+- ✅ **HPOS 兼容**: 支持高性能订单存储
+- ✅ **多语言支持**: 提供英语、葡萄牙语和中文版本
+- ✅ **可配置字段**: 可自定义字段名称和值
+- ✅ **数据迁移工具**: 轻松在字段配置间迁移
+- ✅ **管理面板**: 统计和管理界面
+
+### 安装方法
+
+1. **下载** 插件文件
+2. **上传** 到 `/wp-content/plugins/brazil-checkout-fields/`
+3. **激活** 插件在 WordPress 管理面板中
+4. **配置** 设置在 WooCommerce → Brazil CPF/CNPJ
+
+### 配置说明
+
+#### 基础设置
+
+导航到 **WooCommerce → Brazil CPF/CNPJ** 进行配置：
+
+- **客户类型字段**: 数据库字段名称（默认：`_brazil_customer_type`）
+- **文档字段**: 存储 CPF/CNPJ 的字段（默认：`_brazil_document`）
+- **CPF 值**: 个人客户的值（默认：`pessoa_fisica`）
+- **CNPJ 值**: 企业客户的值（默认：`pessoa_juridica`）
+
+#### 高级配置
+
+对于开发者，可以使用常量覆盖字段名称：
+
+```php
+// 添加到主题的 functions.php
+define('BRAZIL_CUSTOMER_TYPE_FIELD', '_自定义客户类型');
+define('BRAZIL_DOCUMENT_FIELD', '_自定义文档');
+```
+
+### 使用方法
+
+1. **客户体验**: 用户只需在单个字段中输入 CPF 或 CNPJ
+2. **自动检测**: 插件自动检测文档类型
+3. **实时验证**: 文档有效性的即时反馈
+4. **订单存储**: 有效文档与订单一起存储
+
+### 语言支持
+
+插件自动适应您的 WordPress 语言设置：
+
+- **英语** (en_US) - 默认
+- **葡萄牙语** (pt_BR) - 巴西葡萄牙语
+- **中文** (zh_CN) - 简体中文
+
+更改语言：**设置 → 常规 → 站点语言**
+
+### 系统要求
+
+- WordPress 5.0+
+- WooCommerce 6.0+
+- PHP 7.4+
+
+---
+
+## Technical Documentation / Documentação Técnica / 技术文档
+
+### Database Schema / Esquema do Banco / 数据库架构
+
+```php
+// Order meta fields / Campos meta do pedido / 订单元字段
+meta_key: '_brazil_customer_type'  // 'pessoa_fisica' | 'pessoa_juridica'
+meta_key: '_brazil_document'       // 'Formatted CPF/CNPJ'
+```
+
+### API Integration / Integração API / API 集成
+
+```php
+// Get customer data / Obter dados do cliente / 获取客户数据
+$customer_type = get_post_meta($order_id, '_brazil_customer_type', true);
+$document = get_post_meta($order_id, '_brazil_document', true);
+
+// Validation functions / Funções de validação / 验证函数
+$is_valid_cpf = validate_cpf($document);
+$is_valid_cnpj = validate_cnpj($document);
+```
+
+### Hooks & Filters / Ganchos e Filtros / 钩子和过滤器
+
+```php
+// Customize field names / Personalizar nomes de campos / 自定义字段名称
+add_filter('brazil_checkout_field_names', function($fields) {
+    return $fields;
+});
+
+// Custom validation / Validação personalizada / 自定义验证
+add_filter('brazil_document_validation', function($is_valid, $document) {
+    return $is_valid;
+}, 10, 2);
+```
+
+### Migration Tools / Ferramentas de Migração / 迁移工具
+
+Access the migration interface at:
+**WooCommerce → Brazil CPF/CNPJ → Migration Tools**
+
+Available migrations:
+
+- Field name changes
+- Customer type value updates
+- Bulk data processing
+
+---
+
+## Support / Suporte / 支持
+
+### Troubleshooting / Solução de Problemas / 故障排除
+
+**Problem**: Fields not showing  
+**Solução**: Verifique se o tema é compatível com WooCommerce  
+**解决方案**: 检查主题是否与 WooCommerce 兼容
+
+**Problem**: Validation not working  
+**Solução**: Limpe o cache do navegador  
+**解决方案**: 清除浏览器缓存
+
+### Debug Mode / Modo Debug / 调试模式
+
+Add `?debug=1` to the admin page URL to enable debug information.
+
+### Version History / Histórico de Versões / 版本历史
+
+#### Version 1.0
+
+- ✅ Initial release / Lançamento inicial / 初始版本
+- ✅ CPF/CNPJ validation / Validação CPF/CNPJ / CPF/CNPJ 验证
+- ✅ Multi-language support / Suporte multi-idioma / 多语言支持
+- ✅ WooCommerce Block compatibility / Compatibilidade com Blocos / 区块兼容性
+- ✅ HPOS support / Suporte HPOS / HPOS 支持
+- ✅ Admin interface / Interface administrativa / 管理界面
+- ✅ Migration tools / Ferramentas de migração / 迁移工具
+
+---
+
+## License / Licença / 许可证
+
+This plugin is licensed under GPL v2 or later.  
+Este plugin está licenciado sob GPL v2 ou posterior.  
+此插件采用 GPL v2 或更高版本许可证。
+
+## Credits / Créditos / 致谢
+
+**Author / Autor / 作者**: ysmo  
+**Version / Versão / 版本**: 1.0  
+**Last Updated / Última Atualização / 最后更新**: January 2025
+
+Developed for the Brazilian WordPress/WooCommerce community.  
+Desenvolvido para a comunidade brasileira WordPress/WooCommerce.  
+为巴西 WordPress/WooCommerce 社区开发。
