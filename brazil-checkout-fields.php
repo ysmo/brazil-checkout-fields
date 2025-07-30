@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Brazil Checkout Fields - Block Editor Compatible
- * Description: 适配WooCommerce块编辑器的巴西结账字段
- * Version: 2.2.0
+ * Description: 适配WooCommerce块编辑器的巴西结账字段 - 智能CPF/CNPJ输入
+ * Version: 2.3.0
  */
 
 if (!defined('ABSPATH')) exit;
@@ -85,9 +85,7 @@ class Brazil_Checkout_Fields_Blocks {
      */
     public function checkout_data_callback() {
         return array(
-            'customer_type' => 'pessoa_fisica', // 默认选择个人
-            'cpf' => '',
-            'cnpj' => '',
+            'brazil_document' => '',
         );
     }
     
@@ -96,18 +94,8 @@ class Brazil_Checkout_Fields_Blocks {
      */
     public function checkout_schema_callback() {
         return array(
-            'customer_type' => array(
-                'description' => 'Customer type',
-                'type' => 'string',
-                'context' => array('view', 'edit'),
-            ),
-            'cpf' => array(
-                'description' => 'CPF number',
-                'type' => 'string',
-                'context' => array('view', 'edit'),
-            ),
-            'cnpj' => array(
-                'description' => 'CNPJ number',
+            'brazil_document' => array(
+                'description' => 'CPF or CNPJ document number',
                 'type' => 'string',
                 'context' => array('view', 'edit'),
             ),
@@ -205,13 +193,12 @@ class Brazil_Checkout_Fields_Blocks {
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('brazil_checkout_nonce'),
                 'messages' => array(
-                    'cpf_required' => 'CPF é obrigatório para Pessoa Física.',
-                    'cpf_invalid' => 'CPF inválido. Verifique o número digitado.',
-                    'cnpj_required' => 'CNPJ é obrigatório para Pessoa Jurídica.',
-                    'cnpj_invalid' => 'CNPJ inválido. Verifique o número digitado.',
-                    'customer_type_required' => 'Selecione o tipo de cliente.',
+                    'document_required' => 'CPF ou CNPJ é obrigatório.',
+                    'document_invalid' => 'CPF ou CNPJ inválido. Verifique o número digitado.',
                     'cpf_valid' => 'CPF válido ✓',
-                    'cnpj_valid' => 'CNPJ válido ✓'
+                    'cnpj_valid' => 'CNPJ válido ✓',
+                    'document_hint_cpf' => 'Digite seu CPF (11 dígitos)',
+                    'document_hint_cnpj' => 'Digite seu CNPJ (14 dígitos)'
                 )
             ));
         }
@@ -230,6 +217,16 @@ class Brazil_Checkout_Fields_Blocks {
             
             var brazilValidation = {
                 errors: [],
+                
+                // 根据输入长度检测文档类型
+                detectDocumentType: function(value) {
+                    var cleanValue = value.replace(/[^0-9]/g, '');
+                    if (cleanValue.length <= 11) {
+                        return 'cpf';
+                    } else {
+                        return 'cnpj';
+                    }
+                },
                 
                 // CPF验证算法
                 validateCPF: function(cpf) {
@@ -286,37 +283,34 @@ class Brazil_Checkout_Fields_Blocks {
                     return parseInt(cnpj.charAt(13)) === digit2;
                 },
                 
+                // 验证文档
+                validateDocument: function(value) {
+                    if (!value || !value.trim()) {
+                        return false;
+                    }
+                    
+                    var documentType = this.detectDocumentType(value);
+                    if (documentType === 'cpf') {
+                        return this.validateCPF(value);
+                    } else {
+                        return this.validateCNPJ(value);
+                    }
+                },
+                
                 // 验证所有巴西字段
                 validateAll: function() {
                     this.errors = [];
                     
-                    var customerType = $('#brazil_customer_type').val();
+                    var document = $('#brazil_document').val();
                     
-                    if (!customerType) {
-                        this.errors.push(brazil_checkout_ajax.messages.customer_type_required);
+                    if (!document || !document.trim()) {
+                        this.errors.push(brazil_checkout_ajax.messages.document_required);
                         return false;
                     }
                     
-                    if (customerType === 'pessoa_fisica') {
-                        var cpf = $('#brazil_cpf').val();
-                        if (!cpf.trim()) {
-                            this.errors.push(brazil_checkout_ajax.messages.cpf_required);
-                            return false;
-                        }
-                        if (!this.validateCPF(cpf)) {
-                            this.errors.push(brazil_checkout_ajax.messages.cpf_invalid);
-                            return false;
-                        }
-                    } else if (customerType === 'pessoa_juridica') {
-                        var cnpj = $('#brazil_cnpj').val();
-                        if (!cnpj.trim()) {
-                            this.errors.push(brazil_checkout_ajax.messages.cnpj_required);
-                            return false;
-                        }
-                        if (!this.validateCNPJ(cnpj)) {
-                            this.errors.push(brazil_checkout_ajax.messages.cnpj_invalid);
-                            return false;
-                        }
+                    if (!this.validateDocument(document)) {
+                        this.errors.push(brazil_checkout_ajax.messages.document_invalid);
+                        return false;
                     }
                     
                     return true;
@@ -413,11 +407,6 @@ class Brazil_Checkout_Fields_Blocks {
                 // 设置事件监听器
                 setupFieldListeners();
                 setupValidation();
-                
-                // 设置默认值
-                setTimeout(function() {
-                    $('#brazil_customer_type').val('pessoa_fisica').trigger('change');
-                }, 500);
             }
             
             function injectBrazilFieldsToFieldsBlock() {
@@ -427,10 +416,6 @@ class Brazil_Checkout_Fields_Blocks {
                 
                 setupFieldListeners();
                 setupValidation();
-                
-                setTimeout(function() {
-                    $('#brazil_customer_type').val('pessoa_fisica').trigger('change');
-                }, 500);
             }
             
             function injectBrazilFieldsToCheckoutBlock() {
@@ -448,40 +433,110 @@ class Brazil_Checkout_Fields_Blocks {
                 
                 setupFieldListeners();
                 setupValidation();
+            }
+            
+            function injectBrazilFieldsFallback() {
+                var brazilFieldsHtml = createBrazilFieldsHtml();
+                $('body').prepend('<div style="position: relative; z-index: 999; max-width: 600px; margin: 20px auto;">' + brazilFieldsHtml + '</div>');
+                console.log('使用后备方法插入巴西字段');
                 
-                setTimeout(function() {
-                    $('#brazil_customer_type').val('pessoa_fisica').trigger('change');
-                }, 500);
+                setupFieldListeners();
+                setupValidation();
+            }
+            
+            function setupFieldListeners() {
+                // 智能文档输入处理
+                $(document).on('input', '#brazil_document', function() {
+                    var value = $(this).val().replace(/[^0-9]/g, '');
+                    var documentType = brazilValidation.detectDocumentType(value);
+                    var formattedValue = '';
+                    var maxLength = 18;
+                    var placeholder = '';
+                    var hint = '';
+                    
+                    // 根据检测到的类型格式化输入
+                    if (documentType === 'cpf') {
+                        if (value.length >= 11) {
+                            value = value.substring(0, 11);
+                        }
+                        if (value.length > 9) {
+                            formattedValue = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                        } else if (value.length > 6) {
+                            formattedValue = value.replace(/(\d{3})(\d{3})(\d+)/, '$1.$2.$3');
+                        } else if (value.length > 3) {
+                            formattedValue = value.replace(/(\d{3})(\d+)/, '$1.$2');
+                        } else {
+                            formattedValue = value;
+                        }
+                        maxLength = 14;
+                        placeholder = '000.000.000-00';
+                        hint = brazil_checkout_ajax.messages.document_hint_cpf;
+                        
+                        // 更新隐藏字段
+                        $('#brazil_customer_type').val('pessoa_fisica');
+                        $('#brazil_cpf').val(formattedValue);
+                        $('#brazil_cnpj').val('');
+                    } else {
+                        if (value.length >= 14) {
+                            value = value.substring(0, 14);
+                        }
+                        if (value.length > 12) {
+                            formattedValue = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+                        } else if (value.length > 8) {
+                            formattedValue = value.replace(/(\d{2})(\d{3})(\d{3})(\d+)/, '$1.$2.$3/$4');
+                        } else if (value.length > 5) {
+                            formattedValue = value.replace(/(\d{2})(\d{3})(\d+)/, '$1.$2.$3');
+                        } else if (value.length > 2) {
+                            formattedValue = value.replace(/(\d{2})(\d+)/, '$1.$2');
+                        } else {
+                            formattedValue = value;
+                        }
+                        maxLength = 18;
+                        placeholder = '00.000.000/0000-00';
+                        hint = brazil_checkout_ajax.messages.document_hint_cnpj;
+                        
+                        // 更新隐藏字段
+                        $('#brazil_customer_type').val('pessoa_juridica');
+                        $('#brazil_cpf').val('');
+                        $('#brazil_cnpj').val(formattedValue);
+                    }
+                    
+                    $(this).val(formattedValue);
+                    $(this).attr('placeholder', placeholder);
+                    $(this).attr('maxlength', maxLength);
+                    
+                    // 更新提示信息
+                    var hintContainer = $('.brazil-document-hint');
+                    hintContainer.text(hint).css({
+                        'font-size': '12px',
+                        'color': '#666',
+                        'margin-top': '3px'
+                    });
+                    
+                    // 实时验证
+                    validateDocumentReal(formattedValue, documentType);
+                });
+                
+                console.log('巴西字段事件监听器已设置');
             }
             
             function createBrazilFieldsHtml() {
                 return `
                     <div class="brazil-checkout-fields">
-                        <h4>🇧🇷 Informações Fiscais Brasileiras</h4>
-                        
                         <div class="brazil-field-row">
-                            <label for="brazil_customer_type">Tipo de Cliente *</label>
-                            <select id="brazil_customer_type" name="brazil_customer_type" required>
-                                <option value="pessoa_fisica" selected>Pessoa Física (CPF)</option>
-                                <option value="pessoa_juridica">Pessoa Jurídica (CNPJ)</option>
-                            </select>
+                            <label for="brazil_document">🇧🇷 CPF / CNPJ *</label>
+                            <input type="text" id="brazil_document" name="brazil_document" 
+                                   placeholder="CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00)" 
+                                   maxlength="18" required>
+                            <div class="brazil-document-hint"></div>
+                            <div class="brazil-document-error brazil-field-error"></div>
+                            <div class="brazil-document-success brazil-field-success"></div>
                         </div>
                         
-                        <div class="brazil-field-row cpf-field">
-                            <label for="brazil_cpf">CPF *</label>
-                            <input type="text" id="brazil_cpf" name="brazil_cpf" 
-                                   placeholder="000.000.000-00" maxlength="14" required>
-                            <div class="cpf-error brazil-field-error"></div>
-                            <div class="cpf-success brazil-field-success"></div>
-                        </div>
-                        
-                        <div class="brazil-field-row cnpj-field brazil-field-hidden">
-                            <label for="brazil_cnpj">CNPJ *</label>
-                            <input type="text" id="brazil_cnpj" name="brazil_cnpj" 
-                                   placeholder="00.000.000/0000-00" maxlength="18">
-                            <div class="cnpj-error brazil-field-error"></div>
-                            <div class="cnpj-success brazil-field-success"></div>
-                        </div>
+                        <!-- Hidden fields for backward compatibility -->
+                        <input type="hidden" id="brazil_customer_type" name="brazil_customer_type" value="">
+                        <input type="hidden" id="brazil_cpf" name="brazil_cpf" value="">
+                        <input type="hidden" id="brazil_cnpj" name="brazil_cnpj" value="">
                     </div>
                 `;
             }
@@ -618,11 +673,10 @@ class Brazil_Checkout_Fields_Blocks {
                 console.log('验证监听器已设置');
             }
             
-            function validateFieldReal(fieldId, type) {
-                var field = $(fieldId);
-                var value = field.val();
-                var errorContainer = field.siblings('.brazil-field-error');
-                var successContainer = field.siblings('.brazil-field-success');
+            function validateDocumentReal(value, documentType) {
+                var field = $('#brazil_document');
+                var errorContainer = $('.brazil-document-error');
+                var successContainer = $('.brazil-document-success');
                 
                 errorContainer.hide().text('');
                 successContainer.hide().text('');
@@ -633,18 +687,26 @@ class Brazil_Checkout_Fields_Blocks {
                 }
                 
                 var isValid = false;
-                if (type === 'cpf') {
+                if (documentType === 'cpf') {
                     isValid = brazilValidation.validateCPF(value);
-                } else if (type === 'cnpj') {
+                    if (isValid) {
+                        successContainer.text(brazil_checkout_ajax.messages.cpf_valid).show();
+                    } else {
+                        errorContainer.text('CPF inválido').show();
+                    }
+                } else if (documentType === 'cnpj') {
                     isValid = brazilValidation.validateCNPJ(value);
+                    if (isValid) {
+                        successContainer.text(brazil_checkout_ajax.messages.cnpj_valid).show();
+                    } else {
+                        errorContainer.text('CNPJ inválido').show();
+                    }
                 }
                 
                 if (isValid) {
                     field.addClass('brazil-field-valid');
-                    successContainer.text(brazil_checkout_ajax.messages[type + '_valid']).show();
                 } else {
                     field.addClass('brazil-field-invalid');
-                    errorContainer.text(brazil_checkout_ajax.messages[type + '_invalid']).show();
                 }
             }
             
@@ -713,38 +775,38 @@ class Brazil_Checkout_Fields_Blocks {
     private function perform_validation($die_on_error = true) {
         $errors = array();
         
-        // 如果没有提交巴西字段数据，设置默认值
-        if (!isset($_POST['brazil_customer_type'])) {
-            $_POST['brazil_customer_type'] = 'pessoa_fisica';
-        }
+        // 检查新的统一文档字段
+        $document = isset($_POST['brazil_document']) ? sanitize_text_field($_POST['brazil_document']) : '';
         
-        $customer_type = sanitize_text_field($_POST['brazil_customer_type']);
-        
-        error_log('Brazil Checkout: 验证客户类型: ' . $customer_type);
-        
-        if (empty($customer_type)) {
-            $customer_type = 'pessoa_fisica'; // 默认为个人
-        }
-        
-        if ($customer_type === 'pessoa_fisica') {
-            $cpf = isset($_POST['brazil_cpf']) ? sanitize_text_field($_POST['brazil_cpf']) : '';
-            
-            error_log('Brazil Checkout: 验证CPF: ' . $cpf);
-            
-            if (empty($cpf)) {
-                $errors[] = 'CPF é obrigatório para Pessoa Física.';
-            } elseif (!$this->is_valid_cpf(preg_replace('/[^0-9]/', '', $cpf))) {
-                $errors[] = 'CPF inválido. Verifique o número digitado.';
+        // 后备兼容性：检查旧字段
+        if (empty($document)) {
+            $customer_type = isset($_POST['brazil_customer_type']) ? sanitize_text_field($_POST['brazil_customer_type']) : '';
+            if ($customer_type === 'pessoa_fisica' && isset($_POST['brazil_cpf'])) {
+                $document = sanitize_text_field($_POST['brazil_cpf']);
+            } elseif ($customer_type === 'pessoa_juridica' && isset($_POST['brazil_cnpj'])) {
+                $document = sanitize_text_field($_POST['brazil_cnpj']);
             }
-        } elseif ($customer_type === 'pessoa_juridica') {
-            $cnpj = isset($_POST['brazil_cnpj']) ? sanitize_text_field($_POST['brazil_cnpj']) : '';
+        }
+        
+        error_log('Brazil Checkout: 验证文档: ' . $document);
+        
+        if (empty($document)) {
+            $errors[] = 'CPF ou CNPJ é obrigatório.';
+        } else {
+            $clean_document = preg_replace('/[^0-9]/', '', $document);
             
-            error_log('Brazil Checkout: 验证CNPJ: ' . $cnpj);
-            
-            if (empty($cnpj)) {
-                $errors[] = 'CNPJ é obrigatório para Pessoa Jurídica.';
-            } elseif (!$this->is_valid_cnpj(preg_replace('/[^0-9]/', '', $cnpj))) {
-                $errors[] = 'CNPJ inválido. Verifique o número digitado.';
+            if (strlen($clean_document) === 11) {
+                // CPF验证
+                if (!$this->is_valid_cpf($clean_document)) {
+                    $errors[] = 'CPF inválido. Verifique o número digitado.';
+                }
+            } elseif (strlen($clean_document) === 14) {
+                // CNPJ验证
+                if (!$this->is_valid_cnpj($clean_document)) {
+                    $errors[] = 'CNPJ inválido. Verifique o número digitado.';
+                }
+            } else {
+                $errors[] = 'CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos.';
             }
         }
         
@@ -763,27 +825,31 @@ class Brazil_Checkout_Fields_Blocks {
     public function ajax_validate_fields() {
         check_ajax_referer('brazil_checkout_nonce', 'nonce');
         
-        $customer_type = sanitize_text_field($_POST['customer_type']);
-        $cpf = sanitize_text_field($_POST['cpf']);
-        $cnpj = sanitize_text_field($_POST['cnpj']);
+        $document = sanitize_text_field($_POST['document']);
         
         $response = array('valid' => true, 'errors' => array());
         
-        if ($customer_type === 'pessoa_fisica') {
-            if (empty($cpf)) {
+        if (empty($document)) {
+            $response['valid'] = false;
+            $response['errors'][] = 'CPF ou CNPJ é obrigatório.';
+        } else {
+            $clean_document = preg_replace('/[^0-9]/', '', $document);
+            
+            if (strlen($clean_document) === 11) {
+                // CPF验证
+                if (!$this->is_valid_cpf($clean_document)) {
+                    $response['valid'] = false;
+                    $response['errors'][] = 'CPF inválido. Verifique o número digitado.';
+                }
+            } elseif (strlen($clean_document) === 14) {
+                // CNPJ验证
+                if (!$this->is_valid_cnpj($clean_document)) {
+                    $response['valid'] = false;
+                    $response['errors'][] = 'CNPJ inválido. Verifique o número digitado.';
+                }
+            } else {
                 $response['valid'] = false;
-                $response['errors'][] = 'CPF é obrigatório para Pessoa Física.';
-            } elseif (!$this->is_valid_cpf(preg_replace('/[^0-9]/', '', $cpf))) {
-                $response['valid'] = false;
-                $response['errors'][] = 'CPF inválido. Verifique o número digitado.';
-            }
-        } elseif ($customer_type === 'pessoa_juridica') {
-            if (empty($cnpj)) {
-                $response['valid'] = false;
-                $response['errors'][] = 'CNPJ é obrigatório para Pessoa Jurídica.';
-            } elseif (!$this->is_valid_cnpj(preg_replace('/[^0-9]/', '', $cnpj))) {
-                $response['valid'] = false;
-                $response['errors'][] = 'CNPJ inválido. Verifique o número digitado.';
+                $response['errors'][] = 'CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos.';
             }
         }
         
@@ -794,14 +860,34 @@ class Brazil_Checkout_Fields_Blocks {
      * 保存结账字段数据
      */
     public function save_checkout_fields($order, $request) {
-        $customer_type = isset($_POST['brazil_customer_type']) ? sanitize_text_field($_POST['brazil_customer_type']) : 'pessoa_fisica';
-        $order->update_meta_data('_customer_type', $customer_type);
+        $document = isset($_POST['brazil_document']) ? sanitize_text_field($_POST['brazil_document']) : '';
         
-        if ($customer_type === 'pessoa_fisica' && isset($_POST['brazil_cpf'])) {
+        if (!empty($document)) {
+            $clean_document = preg_replace('/[^0-9]/', '', $document);
+            
+            if (strlen($clean_document) === 11) {
+                // CPF
+                $order->update_meta_data('_customer_type', 'pessoa_fisica');
+                $order->update_meta_data('_cpf', $document);
+                $order->update_meta_data('_brazil_document', $document);
+                $order->update_meta_data('_brazil_document_type', 'cpf');
+            } elseif (strlen($clean_document) === 14) {
+                // CNPJ
+                $order->update_meta_data('_customer_type', 'pessoa_juridica');
+                $order->update_meta_data('_cnpj', $document);
+                $order->update_meta_data('_brazil_document', $document);
+                $order->update_meta_data('_brazil_document_type', 'cnpj');
+            }
+        }
+        
+        // 后备兼容性：保存旧字段
+        if (isset($_POST['brazil_cpf']) && !empty($_POST['brazil_cpf'])) {
+            $order->update_meta_data('_customer_type', 'pessoa_fisica');
             $order->update_meta_data('_cpf', sanitize_text_field($_POST['brazil_cpf']));
         }
         
-        if ($customer_type === 'pessoa_juridica' && isset($_POST['brazil_cnpj'])) {
+        if (isset($_POST['brazil_cnpj']) && !empty($_POST['brazil_cnpj'])) {
+            $order->update_meta_data('_customer_type', 'pessoa_juridica');
             $order->update_meta_data('_cnpj', sanitize_text_field($_POST['brazil_cnpj']));
         }
     }
@@ -810,14 +896,34 @@ class Brazil_Checkout_Fields_Blocks {
      * 保存字段数据 - 后备方法
      */
     public function save_checkout_fields_fallback($order_id) {
-        $customer_type = isset($_POST['brazil_customer_type']) ? sanitize_text_field($_POST['brazil_customer_type']) : 'pessoa_fisica';
-        update_post_meta($order_id, '_customer_type', $customer_type);
+        $document = isset($_POST['brazil_document']) ? sanitize_text_field($_POST['brazil_document']) : '';
         
-        if ($customer_type === 'pessoa_fisica' && isset($_POST['brazil_cpf'])) {
+        if (!empty($document)) {
+            $clean_document = preg_replace('/[^0-9]/', '', $document);
+            
+            if (strlen($clean_document) === 11) {
+                // CPF
+                update_post_meta($order_id, '_customer_type', 'pessoa_fisica');
+                update_post_meta($order_id, '_cpf', $document);
+                update_post_meta($order_id, '_brazil_document', $document);
+                update_post_meta($order_id, '_brazil_document_type', 'cpf');
+            } elseif (strlen($clean_document) === 14) {
+                // CNPJ
+                update_post_meta($order_id, '_customer_type', 'pessoa_juridica');
+                update_post_meta($order_id, '_cnpj', $document);
+                update_post_meta($order_id, '_brazil_document', $document);
+                update_post_meta($order_id, '_brazil_document_type', 'cnpj');
+            }
+        }
+        
+        // 后备兼容性：保存旧字段
+        if (isset($_POST['brazil_cpf']) && !empty($_POST['brazil_cpf'])) {
+            update_post_meta($order_id, '_customer_type', 'pessoa_fisica');
             update_post_meta($order_id, '_cpf', sanitize_text_field($_POST['brazil_cpf']));
         }
         
-        if ($customer_type === 'pessoa_juridica' && isset($_POST['brazil_cnpj'])) {
+        if (isset($_POST['brazil_cnpj']) && !empty($_POST['brazil_cnpj'])) {
+            update_post_meta($order_id, '_customer_type', 'pessoa_juridica');
             update_post_meta($order_id, '_cnpj', sanitize_text_field($_POST['brazil_cnpj']));
         }
     }
@@ -826,14 +932,34 @@ class Brazil_Checkout_Fields_Blocks {
      * 保存字段数据 - 创建订单时
      */
     public function save_checkout_fields_create_order($order, $data) {
-        $customer_type = isset($_POST['brazil_customer_type']) ? sanitize_text_field($_POST['brazil_customer_type']) : 'pessoa_fisica';
-        $order->update_meta_data('_customer_type', $customer_type);
+        $document = isset($_POST['brazil_document']) ? sanitize_text_field($_POST['brazil_document']) : '';
         
-        if ($customer_type === 'pessoa_fisica' && isset($_POST['brazil_cpf'])) {
+        if (!empty($document)) {
+            $clean_document = preg_replace('/[^0-9]/', '', $document);
+            
+            if (strlen($clean_document) === 11) {
+                // CPF
+                $order->update_meta_data('_customer_type', 'pessoa_fisica');
+                $order->update_meta_data('_cpf', $document);
+                $order->update_meta_data('_brazil_document', $document);
+                $order->update_meta_data('_brazil_document_type', 'cpf');
+            } elseif (strlen($clean_document) === 14) {
+                // CNPJ
+                $order->update_meta_data('_customer_type', 'pessoa_juridica');
+                $order->update_meta_data('_cnpj', $document);
+                $order->update_meta_data('_brazil_document', $document);
+                $order->update_meta_data('_brazil_document_type', 'cnpj');
+            }
+        }
+        
+        // 后备兼容性：保存旧字段
+        if (isset($_POST['brazil_cpf']) && !empty($_POST['brazil_cpf'])) {
+            $order->update_meta_data('_customer_type', 'pessoa_fisica');
             $order->update_meta_data('_cpf', sanitize_text_field($_POST['brazil_cpf']));
         }
         
-        if ($customer_type === 'pessoa_juridica' && isset($_POST['brazil_cnpj'])) {
+        if (isset($_POST['brazil_cnpj']) && !empty($_POST['brazil_cnpj'])) {
+            $order->update_meta_data('_customer_type', 'pessoa_juridica');
             $order->update_meta_data('_cnpj', sanitize_text_field($_POST['brazil_cnpj']));
         }
     }
@@ -897,6 +1023,22 @@ class Brazil_Checkout_Fields_Blocks {
      * 在订单详情显示字段
      */
     public function display_fields_in_order($order) {
+        // 优先检查新的统一文档字段
+        $document = $order->get_meta('_brazil_document');
+        $document_type = $order->get_meta('_brazil_document_type');
+        
+        if (!empty($document) && !empty($document_type)) {
+            if ($document_type === 'cpf') {
+                echo '<p><strong>Tipo de Cliente:</strong> Pessoa Física</p>';
+                echo '<p><strong>CPF:</strong> ' . esc_html($document) . '</p>';
+            } elseif ($document_type === 'cnpj') {
+                echo '<p><strong>Tipo de Cliente:</strong> Pessoa Jurídica</p>';
+                echo '<p><strong>CNPJ:</strong> ' . esc_html($document) . '</p>';
+            }
+            return;
+        }
+        
+        // 后备兼容性：检查旧字段
         $customer_type = $order->get_meta('_customer_type');
         $cpf = $order->get_meta('_cpf');
         $cnpj = $order->get_meta('_cnpj');
@@ -914,6 +1056,26 @@ class Brazil_Checkout_Fields_Blocks {
      * 在后台订单页面显示字段
      */
     public function display_fields_in_admin_order($order) {
+        // 优先检查新的统一文档字段
+        $document = $order->get_meta('_brazil_document');
+        $document_type = $order->get_meta('_brazil_document_type');
+        
+        if (!empty($document) && !empty($document_type)) {
+            echo '<div class="address"><p><strong>Informações Fiscais:</strong></p>';
+            
+            if ($document_type === 'cpf') {
+                echo '<p><strong>Tipo:</strong> Pessoa Física<br>';
+                echo '<strong>CPF:</strong> ' . esc_html($document) . '</p>';
+            } elseif ($document_type === 'cnpj') {
+                echo '<p><strong>Tipo:</strong> Pessoa Jurídica<br>';
+                echo '<strong>CNPJ:</strong> ' . esc_html($document) . '</p>';
+            }
+            
+            echo '</div>';
+            return;
+        }
+        
+        // 后备兼容性：检查旧字段
         $customer_type = $order->get_meta('_customer_type');
         $cpf = $order->get_meta('_cpf');
         $cnpj = $order->get_meta('_cnpj');
