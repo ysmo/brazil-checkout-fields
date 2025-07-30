@@ -74,6 +74,23 @@ define('BRAZIL_DOCUMENT_FIELD', '_custom_document');
 3. **Real-time Validation**: Instant feedback on document validity
 4. **Order Storage**: Valid documents are stored with the order
 
+### Screenshots
+
+#### p1 - Checkout Page
+
+![Checkout Page](images/p1-checkout.png)
+_Customer checkout page showing CPF/CNPJ field with real-time validation_
+
+#### p2 - Admin Order Details
+
+![Admin Order Details](images/p2-admin-order.png)
+_WordPress admin showing order details with Brazilian tax information_
+
+#### p3 - Configuration Page
+
+![Configuration Page](images/p3-config.png)
+_Plugin settings page for configuring field names and values_
+
 ### Language Support
 
 The plugin automatically adapts to your WordPress language setting:
@@ -156,6 +173,23 @@ define('BRAZIL_DOCUMENT_FIELD', '_documento_customizado');
 3. **Validação em Tempo Real**: Feedback instantâneo sobre a validade do documento
 4. **Armazenamento**: Documentos válidos são armazenados com o pedido
 
+### Capturas de Tela
+
+#### p1 - Página de Checkout
+
+![Página de Checkout](images/p1-checkout.png)
+_Página de checkout do cliente mostrando campo CPF/CNPJ com validação em tempo real_
+
+#### p2 - Detalhes do Pedido no Admin
+
+![Detalhes do Pedido](images/p2-admin-order.png)
+_Painel administrativo WordPress mostrando detalhes do pedido com informações fiscais brasileiras_
+
+#### p3 - Página de Configuração
+
+![Página de Configuração](images/p3-config.png)
+_Página de configurações do plugin para configurar nomes de campos e valores_
+
 ### Suporte de Idiomas
 
 O plugin se adapta automaticamente à configuração de idioma do WordPress:
@@ -237,6 +271,23 @@ define('BRAZIL_DOCUMENT_FIELD', '_自定义文档');
 2. **自动检测**: 插件自动检测文档类型
 3. **实时验证**: 文档有效性的即时反馈
 4. **订单存储**: 有效文档与订单一起存储
+
+### 截图展示
+
+#### p1 - 结账页面
+
+![结账页面](images/p1-checkout.png)
+_客户结账页面显示具有实时验证的 CPF/CNPJ 字段_
+
+#### p2 - 管理后台订单详情
+
+![管理后台订单详情](images/p2-admin-order.png)
+_WordPress 管理后台显示带有巴西税务信息的订单详情_
+
+#### p3 - 配置页面
+
+![配置页面](images/p3-config.png)
+_插件设置页面，用于配置字段名称和值_
 
 ### 语言支持
 
