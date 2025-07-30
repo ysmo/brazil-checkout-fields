@@ -61,8 +61,8 @@
 
 ```php
 // 添加到主题的 functions.php
-define('BRAZIL_CUSTOMER_TYPE_FIELD', '_自定义客户类型');
-define('BRAZIL_DOCUMENT_FIELD', '_自定义文档');
+define('BRAZIL_CUSTOMER_TYPE_FIELD', '_custom_customer_type');
+define('BRAZIL_DOCUMENT_FIELD', '_custom_document');
 ```
 
 ## 使用方法
