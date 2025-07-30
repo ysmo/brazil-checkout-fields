@@ -55,14 +55,67 @@ class Brazil_Checkout_Fields_Blocks {
         add_action('wp_ajax_validate_brazil_fields', array($this, 'ajax_validate_fields'));
         add_action('wp_ajax_nopriv_validate_brazil_fields', array($this, 'ajax_validate_fields'));
         
-        // 保存字段数据
+        // AJAX保存session数据
+        add_action('wp_ajax_save_brazil_session_data', array($this, 'ajax_save_session_data'));
+        add_action('wp_ajax_nopriv_save_brazil_session_data', array($this, 'ajax_save_session_data'));
+        
+        // AJAX调试（仅管理员）
+        add_action('wp_ajax_debug_brazil_order', array($this, 'debug_brazil_order_ajax'));
+        
+        // Store API扩展 - 让WooCommerce块编辑器识别我们的字段
+        add_action('woocommerce_blocks_loaded', array($this, 'register_checkout_fields_block_support'));
+        add_action('init', array($this, 'init_store_api_support'));
+        
+        // 确保在Store API请求前设置字段
+        add_action('rest_api_init', array($this, 'register_store_api_fields'));
+        
+        // 添加调试hook来监控所有Store API请求
+        add_action('rest_api_init', array($this, 'debug_store_api_requests'));
+        add_filter('rest_pre_dispatch', array($this, 'debug_rest_request'), 10, 3);
+        
+        // 保存字段数据 - 多个Hook确保保存成功
         add_action('woocommerce_store_api_checkout_update_order_from_request', array($this, 'save_checkout_fields'), 10, 2);
         add_action('woocommerce_checkout_update_order_meta', array($this, 'save_checkout_fields_fallback'), 10, 2);
         add_action('woocommerce_checkout_create_order', array($this, 'save_checkout_fields_create_order'), 10, 2);
         
-        // 显示字段在订单页面
+        // 添加更多保存Hook来确保数据保存
+        add_action('woocommerce_store_api_checkout_order_processed', array($this, 'store_api_order_processed'), 10, 1);
+        add_filter('woocommerce_store_api_checkout_data', array($this, 'process_store_api_data'), 10, 2);
+        
+        // 额外的保存Hook - 确保所有情况都覆盖
+        add_action('woocommerce_checkout_order_processed', array($this, 'save_checkout_fields_processed'), 10, 3);
+        add_action('woocommerce_new_order', array($this, 'save_checkout_fields_new_order'), 10, 1);
+        add_action('woocommerce_thankyou', array($this, 'save_checkout_fields_thankyou'), 5, 1);
+        
+        // 显示字段在订单页面 - 多个位置确保显示
         add_action('woocommerce_order_details_after_customer_details', array($this, 'display_fields_in_order'));
+        add_action('woocommerce_view_order_details', array($this, 'display_fields_in_order_details'), 20);
+        add_action('woocommerce_thankyou', array($this, 'display_fields_in_thankyou'), 20);
+        
+        // 额外的用户端显示Hook
+        add_action('woocommerce_order_details_after_order_table', array($this, 'display_fields_after_order_table'), 10);
+        add_action('woocommerce_view_order', array($this, 'display_fields_in_account_order'), 20);
+        add_action('woocommerce_order_details_before_order_table', array($this, 'display_fields_before_order_table'), 20);
+        
+        // 客户详情相关Hook
+        add_action('woocommerce_order_details_after_customer_details', array($this, 'display_fields_after_customer_details'), 25);
+        
+        // 后台管理订单页面显示
         add_action('woocommerce_admin_order_data_after_billing_address', array($this, 'display_fields_in_admin_order'));
+        add_action('woocommerce_admin_order_data_after_shipping_address', array($this, 'display_fields_in_admin_order_shipping'));
+        
+        // 订单邮件中显示
+        add_action('woocommerce_email_customer_details', array($this, 'display_fields_in_email'), 20, 3);
+        add_action('woocommerce_email_order_details', array($this, 'display_fields_in_email_order'), 15, 4);
+        
+        // 调试Hook来确认执行
+        add_action('woocommerce_order_details_after_customer_details', array($this, 'debug_hook_execution'), 1);
+        add_action('woocommerce_view_order', array($this, 'debug_view_order_hook'), 1);
+        
+        // 添加管理员工具栏调试链接（仅供开发调试）
+        if (current_user_can('manage_options')) {
+            add_action('wp_footer', array($this, 'add_debug_tools'));
+        }
     }
     
     /**
@@ -903,6 +956,19 @@ class Brazil_Checkout_Fields_Blocks {
                     if (isBrazilSelected && panelVisible) {
                         console.log('🔍 表单提交时执行最终文档验证:', currentValue);
                         
+                        // 保存巴西数据到session（通过AJAX）
+                        if (currentValue.trim()) {
+                            console.log('💾 保存巴西数据到session');
+                            $.post(brazil_checkout_ajax.ajax_url, {
+                                action: 'save_brazil_session_data',
+                                nonce: brazil_checkout_ajax.nonce,
+                                brazil_document: currentValue,
+                                billing_country: $('select[name="billing_country"], #billing_country').val() || 'BR'
+                            }, function(response) {
+                                console.log('Session save response:', response);
+                            });
+                        }
+                        
                         // 清除之前的验证状态
                         documentField.removeClass('brazil-field-invalid brazil-field-valid');
                         
@@ -1373,6 +1439,114 @@ class Brazil_Checkout_Fields_Blocks {
                 }
             }
             
+            // Session数据保存功能
+            function saveBrazilDataToSession() {
+                var documentField = $('.brazil-checkout-fields input[name="brazil_document"]');
+                var countryField = $('select[name="billing_country"], input[name="billing_country"]');
+                
+                if (documentField.length && countryField.length) {
+                    var documentValue = documentField.val();
+                    var countryValue = countryField.val();
+                    
+                    if (documentValue && countryValue === 'BR') {
+                        console.log('💾 Saving Brazil data to session:', documentValue);
+                        
+                        var formData = new FormData();
+                        formData.append('action', 'save_brazil_session_data');
+                        formData.append('cpf_cnpj', documentValue);
+                        formData.append('billing_country', countryValue);
+                        formData.append('_wpnonce', brazilCheckoutVars.nonce);
+                        
+                        fetch(brazilCheckoutVars.ajaxurl, {
+                            method: 'POST',
+                            body: formData
+                        }).then(function(response) {
+                            return response.json();
+                        }).then(function(data) {
+                            console.log('🔄 Brazil data saved to session:', data);
+                        }).catch(function(error) {
+                            console.log('❌ Session save error:', error);
+                        });
+                    }
+                }
+            }
+            
+            // WooCommerce Store API拦截 - 关键修复
+            function interceptStoreAPIRequests() {
+                // 拦截所有fetch请求
+                var originalFetch = window.fetch;
+                window.fetch = function(url, options) {
+                    // 检查是否是WooCommerce Store API checkout请求
+                    if (url && url.includes('/wp-json/wc/store/v1/checkout')) {
+                        console.log('🔍 拦截Store API请求:', url);
+                        
+                        try {
+                            var documentField = $('.brazil-checkout-fields input[name="brazil_document"]');
+                            var documentValue = documentField.val();
+                            
+                            if (documentValue && options && options.body) {
+                                var requestData = JSON.parse(options.body);
+                                console.log('📦 原始请求数据:', requestData);
+                                
+                                // 确保additional_fields存在
+                                if (!requestData.additional_fields) {
+                                    requestData.additional_fields = {};
+                                }
+                                
+                                // 添加巴西字段到请求数据
+                                requestData.additional_fields.brazil_document = documentValue;
+                                
+                                // 检测文档类型并添加相关字段
+                                var documentType = brazilValidation.detectDocumentType(documentValue);
+                                if (documentType === 'cpf') {
+                                    requestData.additional_fields.brazil_cpf = documentValue;
+                                    requestData.additional_fields.brazil_customer_type = 'pessoa_fisica';
+                                    requestData.additional_fields.brazil_cnpj = ''; // 确保CNPJ为空字符串
+                                } else {
+                                    requestData.additional_fields.brazil_cnpj = documentValue;
+                                    requestData.additional_fields.brazil_customer_type = 'pessoa_juridica';
+                                    requestData.additional_fields.brazil_cpf = ''; // 确保CPF为空字符串
+                                }
+                                
+                                // 更新请求体
+                                options.body = JSON.stringify(requestData);
+                                console.log('✅ 已将巴西字段添加到Store API请求:', {
+                                    brazil_document: documentValue,
+                                    document_type: documentType
+                                });
+                                console.log('📤 修改后的请求数据:', requestData);
+                            }
+                        } catch (error) {
+                            console.error('❌ Store API拦截错误:', error);
+                        }
+                    }
+                    
+                    return originalFetch.apply(this, arguments);
+                };
+                
+                console.log('🔗 Store API拦截器已设置');
+            }
+            
+            // 初始化Store API拦截
+            interceptStoreAPIRequests();
+            
+            // 拦截所有可能的表单提交
+            $(document).on('submit', 'form', function(e) {
+                console.log('📝 Form submission intercepted');
+                saveBrazilDataToSession();
+            });
+            
+            // 拦截块编辑器按钮点击
+            $(document).on('click', '[type="submit"], .wc-block-components-checkout-place-order-button, .wp-block-woocommerce-checkout .wc-block-checkout__actions button', function(e) {
+                console.log('🔘 Submit button clicked, saving data to session');
+                saveBrazilDataToSession();
+            });
+            
+            // 页面卸载前保存数据
+            $(window).on('beforeunload', function() {
+                saveBrazilDataToSession();
+            });
+            
             // 开始等待并注入字段
             waitForCheckoutBlocks();
         });
@@ -1495,6 +1669,46 @@ class Brazil_Checkout_Fields_Blocks {
     }
     
     /**
+     * AJAX保存session数据
+     */
+    public function ajax_save_session_data() {
+        try {
+            // 开启session
+            if (!session_id()) {
+                session_start();
+            }
+            
+            // 验证nonce
+            if (!wp_verify_nonce($_POST['_wpnonce'], 'brazil_fields_nonce')) {
+                wp_die('Security check failed');
+            }
+            
+            // 获取并保存数据
+            $cpf_cnpj = sanitize_text_field($_POST['cpf_cnpj'] ?? '');
+            $country = sanitize_text_field($_POST['billing_country'] ?? '');
+            
+            if (!empty($cpf_cnpj)) {
+                $_SESSION['brazil_cpf_cnpj'] = $cpf_cnpj;
+                $_SESSION['brazil_billing_country'] = $country;
+                $_SESSION['brazil_data_timestamp'] = current_time('timestamp');
+                
+                error_log("Brazil Fields Session Save: CPF/CNPJ={$cpf_cnpj}, Country={$country}");
+                
+                wp_send_json_success(array(
+                    'message' => 'Session data saved',
+                    'cpf_cnpj' => $cpf_cnpj,
+                    'country' => $country
+                ));
+            } else {
+                wp_send_json_error('No data to save');
+            }
+        } catch (Exception $e) {
+            error_log("Brazil Fields Session Save Error: " . $e->getMessage());
+            wp_send_json_error('Failed to save session data');
+        }
+    }
+    
+    /**
      * AJAX验证字段
      */
     public function ajax_validate_fields() {
@@ -1532,90 +1746,230 @@ class Brazil_Checkout_Fields_Blocks {
     }
     
     /**
-     * 保存结账字段数据
+     * 保存结账字段数据 - 增强版本
      */
     public function save_checkout_fields($order, $request) {
-        // 检查是否选择了巴西国家
-        $billing_country = isset($_POST['billing_country']) ? sanitize_text_field($_POST['billing_country']) : '';
-        $shipping_country = isset($_POST['shipping_country']) ? sanitize_text_field($_POST['shipping_country']) : '';
+        error_log('🔥 BRAZIL CHECKOUT: save_checkout_fields MAIN FUNCTION CALLED - Order ID: ' . ($order ? $order->get_id() : 'null'));
         
-        // 如果不是巴西，不保存字段
-        if ($billing_country !== 'BR' && $shipping_country !== 'BR') {
+        if (!$order) {
+            error_log('Brazil Checkout: No order object provided');
             return;
         }
         
-        $document = isset($_POST['brazil_document']) ? sanitize_text_field($_POST['brazil_document']) : '';
+        $order_id = $order->get_id();
+        error_log('Brazil Checkout: Processing order ID: ' . $order_id);
+        
+        // 检查请求参数
+        $request_params = $request ? $request->get_params() : array();
+        error_log('Brazil Checkout: Request params keys: ' . implode(', ', array_keys($request_params)));
+        
+        // 检查POST数据
+        error_log('Brazil Checkout: POST data keys: ' . implode(', ', array_keys($_POST)));
+        
+        // 检查是否选择了巴西国家
+        $billing_country = '';
+        $shipping_country = '';
+        
+        // 从多个来源获取国家信息
+        if (isset($request_params['billing_address']['country'])) {
+            $billing_country = $request_params['billing_address']['country'];
+        } elseif (isset($_POST['billing_country'])) {
+            $billing_country = sanitize_text_field($_POST['billing_country']);
+        }
+        
+        if (isset($request_params['shipping_address']['country'])) {
+            $shipping_country = $request_params['shipping_address']['country'];
+        } elseif (isset($_POST['shipping_country'])) {
+            $shipping_country = sanitize_text_field($_POST['shipping_country']);
+        }
+        
+        error_log('Brazil Checkout: Countries - Billing: ' . $billing_country . ', Shipping: ' . $shipping_country);
+        
+        // 如果不是巴西，不保存字段
+        if ($billing_country !== 'BR' && $shipping_country !== 'BR') {
+            error_log('Brazil Checkout: Not Brazil address, skipping save');
+            return;
+        }
+        
+        // 查找文档数据 - 检查多个可能的来源
+        $document = '';
+        
+        // 1. 检查Store API的additional_fields
+        if (isset($request_params['additional_fields']['brazil_document'])) {
+            $document = sanitize_text_field($request_params['additional_fields']['brazil_document']);
+            error_log('Brazil Checkout: Found document in additional_fields: ' . $document);
+        }
+        
+        // 2. 检查Store API的extensions
+        elseif (isset($request_params['extensions']['brazil-checkout-fields']['brazil_document'])) {
+            $document = sanitize_text_field($request_params['extensions']['brazil-checkout-fields']['brazil_document']);
+            error_log('Brazil Checkout: Found document in extensions: ' . $document);
+        }
+        
+        // 3. 检查直接的请求参数
+        elseif (isset($request_params['brazil_document'])) {
+            $document = sanitize_text_field($request_params['brazil_document']);
+            error_log('Brazil Checkout: Found document in request params: ' . $document);
+        }
+        
+        // 4. 检查POST数据
+        else {
+            $possible_fields = array(
+                'brazil_document',
+                'brazil_cpf',
+                'brazil_cnpj',
+                'billing_brazil_document',
+                'cpf_cnpj',
+                'document'
+            );
+            
+            foreach ($possible_fields as $field) {
+                if (isset($_POST[$field]) && !empty($_POST[$field])) {
+                    $document = sanitize_text_field($_POST[$field]);
+                    error_log('Brazil Checkout: Found document in POST field: ' . $field . ' = ' . $document);
+                    break;
+                }
+            }
+        }
+        
+        // 5. 如果还是没找到，尝试从session获取
+        if (empty($document)) {
+            if (!session_id()) {
+                session_start();
+            }
+            if (isset($_SESSION['brazil_cpf_cnpj']) && !empty($_SESSION['brazil_cpf_cnpj'])) {
+                $document = sanitize_text_field($_SESSION['brazil_cpf_cnpj']);
+                error_log('Brazil Checkout: Found document in session: ' . $document);
+            }
+        }
         
         if (!empty($document)) {
             $clean_document = preg_replace('/[^0-9]/', '', $document);
+            error_log('Brazil Checkout: Clean document: ' . $clean_document . ' (length: ' . strlen($clean_document) . ')');
             
             if (strlen($clean_document) === 11) {
                 // CPF
+                error_log('Brazil Checkout: Saving CPF data for order ' . $order_id);
                 $order->update_meta_data('_customer_type', 'pessoa_fisica');
                 $order->update_meta_data('_cpf', $document);
                 $order->update_meta_data('_brazil_document', $document);
                 $order->update_meta_data('_brazil_document_type', 'cpf');
+                
+                // 也保存无前缀版本
+                $order->update_meta_data('brazil_document', $document);
+                $order->update_meta_data('brazil_document_type', 'cpf');
+                
             } elseif (strlen($clean_document) === 14) {
                 // CNPJ
+                error_log('Brazil Checkout: Saving CNPJ data for order ' . $order_id);
                 $order->update_meta_data('_customer_type', 'pessoa_juridica');
                 $order->update_meta_data('_cnpj', $document);
                 $order->update_meta_data('_brazil_document', $document);
                 $order->update_meta_data('_brazil_document_type', 'cnpj');
+                
+                // 也保存无前缀版本
+                $order->update_meta_data('brazil_document', $document);
+                $order->update_meta_data('brazil_document_type', 'cnpj');
+                
+            } else {
+                error_log('Brazil Checkout: Invalid document length: ' . strlen($clean_document));
             }
+            
+            // 保存更改
+            $order->save();
+            error_log('Brazil Checkout: Order ' . $order_id . ' saved with Brazil data: ' . $document);
+            
+            // 清理session数据
+            if (isset($_SESSION['brazil_cpf_cnpj'])) {
+                unset($_SESSION['brazil_cpf_cnpj'], $_SESSION['brazil_billing_country'], $_SESSION['brazil_data_timestamp']);
+            }
+            
+        } else {
+            error_log('Brazil Checkout: No document data found in Store API request, POST, or session');
+            
+            // 调试：记录完整的请求结构
+            error_log('Brazil Checkout: Full request structure: ' . print_r($request_params, true));
         }
         
         // 后备兼容性：保存旧字段
         if (isset($_POST['brazil_cpf']) && !empty($_POST['brazil_cpf'])) {
+            error_log('Brazil Checkout: Saving legacy CPF field');
             $order->update_meta_data('_customer_type', 'pessoa_fisica');
             $order->update_meta_data('_cpf', sanitize_text_field($_POST['brazil_cpf']));
+            $order->save();
         }
         
         if (isset($_POST['brazil_cnpj']) && !empty($_POST['brazil_cnpj'])) {
+            error_log('Brazil Checkout: Saving legacy CNPJ field');
             $order->update_meta_data('_customer_type', 'pessoa_juridica');
             $order->update_meta_data('_cnpj', sanitize_text_field($_POST['brazil_cnpj']));
+            $order->save();
         }
     }
     
     /**
-     * 保存字段数据 - 后备方法
+     * 保存字段数据 - 后备方法 - 增强版本
      */
     public function save_checkout_fields_fallback($order_id) {
+        error_log('Brazil Checkout: save_checkout_fields_fallback called - Order ID: ' . $order_id);
+        error_log('Brazil Checkout: POST data: ' . print_r($_POST, true));
+        
+        if (!$order_id) {
+            error_log('Brazil Checkout: No order ID provided');
+            return;
+        }
+        
         // 检查是否选择了巴西国家
         $billing_country = isset($_POST['billing_country']) ? sanitize_text_field($_POST['billing_country']) : '';
         $shipping_country = isset($_POST['shipping_country']) ? sanitize_text_field($_POST['shipping_country']) : '';
         
+        error_log('Brazil Checkout: Countries - Billing: ' . $billing_country . ', Shipping: ' . $shipping_country);
+        
         // 如果不是巴西，不保存字段
         if ($billing_country !== 'BR' && $shipping_country !== 'BR') {
+            error_log('Brazil Checkout: Not Brazil address, skipping save');
             return;
         }
         
         $document = isset($_POST['brazil_document']) ? sanitize_text_field($_POST['brazil_document']) : '';
+        error_log('Brazil Checkout: Document field value: ' . $document);
         
         if (!empty($document)) {
             $clean_document = preg_replace('/[^0-9]/', '', $document);
+            error_log('Brazil Checkout: Clean document: ' . $clean_document . ' (length: ' . strlen($clean_document) . ')');
             
             if (strlen($clean_document) === 11) {
                 // CPF
+                error_log('Brazil Checkout: Saving CPF data via update_post_meta');
                 update_post_meta($order_id, '_customer_type', 'pessoa_fisica');
                 update_post_meta($order_id, '_cpf', $document);
                 update_post_meta($order_id, '_brazil_document', $document);
                 update_post_meta($order_id, '_brazil_document_type', 'cpf');
             } elseif (strlen($clean_document) === 14) {
                 // CNPJ
+                error_log('Brazil Checkout: Saving CNPJ data via update_post_meta');
                 update_post_meta($order_id, '_customer_type', 'pessoa_juridica');
                 update_post_meta($order_id, '_cnpj', $document);
                 update_post_meta($order_id, '_brazil_document', $document);
                 update_post_meta($order_id, '_brazil_document_type', 'cnpj');
+            } else {
+                error_log('Brazil Checkout: Invalid document length: ' . strlen($clean_document));
             }
+            
+            error_log('Brazil Checkout: Fallback save completed');
+        } else {
+            error_log('Brazil Checkout: No document data found in POST');
         }
         
         // 后备兼容性：保存旧字段
         if (isset($_POST['brazil_cpf']) && !empty($_POST['brazil_cpf'])) {
+            error_log('Brazil Checkout: Saving legacy CPF field via update_post_meta');
             update_post_meta($order_id, '_customer_type', 'pessoa_fisica');
             update_post_meta($order_id, '_cpf', sanitize_text_field($_POST['brazil_cpf']));
         }
         
         if (isset($_POST['brazil_cnpj']) && !empty($_POST['brazil_cnpj'])) {
+            error_log('Brazil Checkout: Saving legacy CNPJ field via update_post_meta');
             update_post_meta($order_id, '_customer_type', 'pessoa_juridica');
             update_post_meta($order_id, '_cnpj', sanitize_text_field($_POST['brazil_cnpj']));
         }
@@ -1722,59 +2076,346 @@ class Brazil_Checkout_Fields_Blocks {
     }
     
     /**
-     * 在订单详情显示字段
+     * 在订单详情显示字段 - 增强版本
      */
     public function display_fields_in_order($order) {
-        // 优先检查新的统一文档字段
-        $document = $order->get_meta('_brazil_document');
-        $document_type = $order->get_meta('_brazil_document_type');
+        // 添加调试日志
+        error_log('Brazil Checkout: display_fields_in_order called');
         
-        if (!empty($document) && !empty($document_type)) {
-            if ($document_type === 'cpf') {
-                echo '<p><strong>Tipo de Cliente:</strong> Pessoa Física</p>';
-                echo '<p><strong>CPF:</strong> ' . esc_html($document) . '</p>';
-            } elseif ($document_type === 'cnpj') {
-                echo '<p><strong>Tipo de Cliente:</strong> Pessoa Jurídica</p>';
-                echo '<p><strong>CNPJ:</strong> ' . esc_html($document) . '</p>';
+        if (!$order) {
+            error_log('Brazil Checkout: No order object provided');
+            return;
+        }
+        
+        // 获取订单ID进行调试
+        $order_id = $order->get_id();
+        error_log('Brazil Checkout: Processing order ID: ' . $order_id);
+        
+        $brazil_info = $this->get_brazil_order_info($order);
+        error_log('Brazil Checkout: Brazil info result: ' . print_r($brazil_info, true));
+        
+        if (!$brazil_info) {
+            error_log('Brazil Checkout: No Brazil info found, checking raw meta data');
+            
+            // 调试所有订单meta数据
+            $all_meta = $order->get_meta_data();
+            foreach ($all_meta as $meta) {
+                $key = $meta->get_data()['key'];
+                $value = $meta->get_data()['value'];
+                if (strpos($key, 'brazil') !== false || strpos($key, 'cpf') !== false || strpos($key, 'cnpj') !== false || strpos($key, 'customer') !== false) {
+                    error_log('Brazil Checkout: Found meta - Key: ' . $key . ', Value: ' . $value);
+                }
             }
             return;
         }
         
-        // 后备兼容性：检查旧字段
-        $customer_type = $order->get_meta('_customer_type');
-        $cpf = $order->get_meta('_cpf');
-        $cnpj = $order->get_meta('_cnpj');
+        echo '<div class="brazil-order-info" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 5px;">';
+        echo '<h3 style="margin-top: 0; color: #495057; font-size: 1.2em;">🇧🇷 Informações Fiscais do Brasil</h3>';
         
-        if ($customer_type === 'pessoa_fisica' && $cpf) {
-            echo '<p><strong>Tipo de Cliente:</strong> Pessoa Física</p>';
-            echo '<p><strong>CPF:</strong> ' . esc_html($cpf) . '</p>';
-        } elseif ($customer_type === 'pessoa_juridica' && $cnpj) {
-            echo '<p><strong>Tipo de Cliente:</strong> Pessoa Jurídica</p>';
-            echo '<p><strong>CNPJ:</strong> ' . esc_html($cnpj) . '</p>';
+        if ($brazil_info['type'] === 'cpf') {
+            echo '<p style="margin: 8px 0;"><strong>Tipo de Cliente:</strong> <span style="color: #28a745;">Pessoa Física</span></p>';
+            echo '<p style="margin: 8px 0;"><strong>CPF:</strong> <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">' . esc_html($brazil_info['document']) . '</code></p>';
+        } elseif ($brazil_info['type'] === 'cnpj') {
+            echo '<p style="margin: 8px 0;"><strong>Tipo de Cliente:</strong> <span style="color: #007bff;">Pessoa Jurídica</span></p>';
+            echo '<p style="margin: 8px 0;"><strong>CNPJ:</strong> <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">' . esc_html($brazil_info['document']) . '</code></p>';
+        }
+        
+        echo '</div>';
+        
+        error_log('Brazil Checkout: Successfully displayed Brazil info');
+    }
+    
+    /**
+     * 在订单详情页面显示 - 另一个位置
+     */
+    public function display_fields_in_order_details($order_id) {
+        $order = wc_get_order($order_id);
+        if (!$order) return;
+        
+        $brazil_info = $this->get_brazil_order_info($order);
+        if (!$brazil_info) return;
+        
+        echo '<section class="woocommerce-brazil-details">';
+        echo '<h2 class="woocommerce-column__title">Informações Fiscais</h2>';
+        echo '<table class="woocommerce-table woocommerce-table--brazil-info shop_table">';
+        
+        echo '<tr><th>Tipo de Cliente:</th><td>';
+        if ($brazil_info['type'] === 'cpf') {
+            echo 'Pessoa Física';
+        } elseif ($brazil_info['type'] === 'cnpj') {
+            echo 'Pessoa Jurídica';
+        }
+        echo '</td></tr>';
+        
+        echo '<tr><th>';
+        echo ($brazil_info['type'] === 'cpf') ? 'CPF:' : 'CNPJ:';
+        echo '</th><td>' . esc_html($brazil_info['document']) . '</td></tr>';
+        
+        echo '</table>';
+        echo '</section>';
+    }
+    
+    /**
+     * 在感谢页面显示
+     */
+    public function display_fields_in_thankyou($order_id) {
+        if (!$order_id) return;
+        
+        $order = wc_get_order($order_id);
+        if (!$order) return;
+        
+        $brazil_info = $this->get_brazil_order_info($order);
+        if (!$brazil_info) return;
+        
+        echo '<div class="brazil-thankyou-info" style="margin: 20px 0; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; color: #155724;">';
+        echo '<h3 style="margin-top: 0;">✅ Informações Fiscais Confirmadas</h3>';
+        echo '<p><strong>' . ($brazil_info['type'] === 'cpf' ? 'CPF' : 'CNPJ') . ':</strong> ' . esc_html($brazil_info['document']) . '</p>';
+        echo '<small>Suas informações fiscais foram salvas com segurança para este pedido.</small>';
+        echo '</div>';
+    }
+    
+    /**
+     * 在后台订单页面显示字段 - 增强版本
+     */
+    public function display_fields_in_admin_order($order) {
+        if (!$order) return;
+        
+        $brazil_info = $this->get_brazil_order_info($order);
+        if (!$brazil_info) return;
+        
+        echo '<div class="address">';
+        echo '<p><strong>🇧🇷 Informações Fiscais do Brasil:</strong></p>';
+        
+        if ($brazil_info['type'] === 'cpf') {
+            echo '<p><strong>Tipo:</strong> <span style="color: #28a745; font-weight: bold;">Pessoa Física</span><br>';
+            echo '<strong>CPF:</strong> <span style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px; font-family: monospace;">' . esc_html($brazil_info['document']) . '</span></p>';
+        } elseif ($brazil_info['type'] === 'cnpj') {
+            echo '<p><strong>Tipo:</strong> <span style="color: #007bff; font-weight: bold;">Pessoa Jurídica</span><br>';
+            echo '<strong>CNPJ:</strong> <span style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px; font-family: monospace;">' . esc_html($brazil_info['document']) . '</span></p>';
+        }
+        
+        // 添加验证状态指示器
+        $is_valid = $this->validate_document_format($brazil_info['document'], $brazil_info['type']);
+        echo '<p><strong>Status:</strong> ';
+        if ($is_valid) {
+            echo '<span style="color: #28a745; font-weight: bold;">✓ Documento Válido</span>';
+        } else {
+            echo '<span style="color: #dc3545; font-weight: bold;">⚠ Verificar Documento</span>';
+        }
+        echo '</p>';
+        
+        echo '</div>';
+    }
+    
+    /**
+     * 在后台订单页面配送地址区域显示
+     */
+    public function display_fields_in_admin_order_shipping($order) {
+        if (!$order) return;
+        
+        $brazil_info = $this->get_brazil_order_info($order);
+        if (!$brazil_info) return;
+        
+        echo '<div class="address" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-left: 4px solid #007cba;">';
+        echo '<p><strong>Informações Fiscais:</strong> ';
+        echo ($brazil_info['type'] === 'cpf' ? 'CPF: ' : 'CNPJ: ') . esc_html($brazil_info['document']);
+        echo ' <small>(' . ($brazil_info['type'] === 'cpf' ? 'Pessoa Física' : 'Pessoa Jurídica') . ')</small></p>';
+        echo '</div>';
+    }
+    
+    /**
+     * 在邮件中显示客户详情时显示巴西信息
+     */
+    public function display_fields_in_email($order, $sent_to_admin = false, $plain_text = false) {
+        if (!$order) return;
+        
+        $brazil_info = $this->get_brazil_order_info($order);
+        if (!$brazil_info) return;
+        
+        if ($plain_text) {
+            echo "\n" . __('Informações Fiscais:', 'woocommerce') . "\n";
+            echo ($brazil_info['type'] === 'cpf' ? 'CPF: ' : 'CNPJ: ') . $brazil_info['document'] . "\n";
+            echo ($brazil_info['type'] === 'cpf' ? 'Pessoa Física' : 'Pessoa Jurídica') . "\n";
+        } else {
+            echo '<div style="margin: 15px 0; padding: 10px; background: #f8f9fa; border-left: 4px solid #007cba;">';
+            echo '<h3 style="margin-top: 0;">🇧🇷 Informações Fiscais</h3>';
+            echo '<p><strong>' . ($brazil_info['type'] === 'cpf' ? 'CPF' : 'CNPJ') . ':</strong> ' . esc_html($brazil_info['document']) . '</p>';
+            echo '<p><strong>Tipo:</strong> ' . ($brazil_info['type'] === 'cpf' ? 'Pessoa Física' : 'Pessoa Jurídica') . '</p>';
+            echo '</div>';
         }
     }
     
     /**
-     * 在后台订单页面显示字段
+     * 在邮件订单详情中显示
      */
-    public function display_fields_in_admin_order($order) {
+    public function display_fields_in_email_order($order, $sent_to_admin, $plain_text, $email) {
+        if (!$order) return;
+        
+        // 只在确认邮件和发票邮件中显示
+        if (!in_array($email->id, array('customer_processing_order', 'customer_completed_order', 'new_order'))) {
+            return;
+        }
+        
+        $brazil_info = $this->get_brazil_order_info($order);
+        if (!$brazil_info) return;
+        
+        if ($plain_text) {
+            echo "\n=== INFORMAÇÕES FISCAIS ===\n";
+            echo ($brazil_info['type'] === 'cpf' ? 'CPF: ' : 'CNPJ: ') . $brazil_info['document'] . "\n";
+        } else {
+            echo '<div style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; background: #f9f9f9;">';
+            echo '<h3 style="margin-top: 0; color: #333;">Informações Fiscais</h3>';
+            echo '<table style="width: 100%; border-collapse: collapse;">';
+            echo '<tr><td style="padding: 5px; border-bottom: 1px solid #eee;"><strong>' . ($brazil_info['type'] === 'cpf' ? 'CPF' : 'CNPJ') . ':</strong></td>';
+            echo '<td style="padding: 5px; border-bottom: 1px solid #eee;">' . esc_html($brazil_info['document']) . '</td></tr>';
+            echo '<tr><td style="padding: 5px;"><strong>Tipo:</strong></td>';
+            echo '<td style="padding: 5px;">' . ($brazil_info['type'] === 'cpf' ? 'Pessoa Física' : 'Pessoa Jurídica') . '</td></tr>';
+            echo '</table>';
+            echo '</div>';
+        }
+    }
+    
+    /**
+     * 在账户页面订单查看中显示
+     */
+    public function display_fields_in_account_order($order_id) {
+        error_log('Brazil Checkout: display_fields_in_account_order called with order ID: ' . $order_id);
+        
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            error_log('Brazil Checkout: Could not get order object for ID: ' . $order_id);
+            return;
+        }
+        
+        $brazil_info = $this->get_brazil_order_info($order);
+        if (!$brazil_info) {
+            error_log('Brazil Checkout: No Brazil info found for account order view');
+            return;
+        }
+        
+        echo '<div class="woocommerce-brazil-info" style="margin: 20px 0; padding: 15px; background: #f1f3f4; border-radius: 5px;">';
+        echo '<h3>Informações Fiscais</h3>';
+        echo '<dl class="variation">';
+        echo '<dt>Tipo de Cliente:</dt>';
+        echo '<dd>' . ($brazil_info['type'] === 'cpf' ? 'Pessoa Física' : 'Pessoa Jurídica') . '</dd>';
+        echo '<dt>' . ($brazil_info['type'] === 'cpf' ? 'CPF' : 'CNPJ') . ':</dt>';
+        echo '<dd>' . esc_html($brazil_info['document']) . '</dd>';
+        echo '</dl>';
+        echo '</div>';
+        
+        error_log('Brazil Checkout: Successfully displayed Brazil info in account order view');
+    }
+    
+    /**
+     * 在订单表格后显示
+     */
+    public function display_fields_after_order_table($order) {
+        error_log('Brazil Checkout: display_fields_after_order_table called');
+        
+        if (!$order) return;
+        
+        $brazil_info = $this->get_brazil_order_info($order);
+        if (!$brazil_info) return;
+        
+        echo '<div class="brazil-order-info-table" style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px;">';
+        echo '<h3 style="margin-top: 0; color: #495057; border-bottom: 2px solid #007cba; padding-bottom: 10px;">🇧🇷 Informações Fiscais</h3>';
+        echo '<table class="shop_table shop_table_responsive">';
+        echo '<tbody>';
+        echo '<tr><th>Tipo de Cliente:</th><td>' . ($brazil_info['type'] === 'cpf' ? 'Pessoa Física' : 'Pessoa Jurídica') . '</td></tr>';
+        echo '<tr><th>' . ($brazil_info['type'] === 'cpf' ? 'CPF' : 'CNPJ') . ':</th><td><strong>' . esc_html($brazil_info['document']) . '</strong></td></tr>';
+        echo '</tbody>';
+        echo '</table>';
+        echo '</div>';
+    }
+    
+    /**
+     * 在订单表格前显示
+     */
+    public function display_fields_before_order_table($order) {
+        error_log('Brazil Checkout: display_fields_before_order_table called');
+        
+        if (!$order) return;
+        
+        $brazil_info = $this->get_brazil_order_info($order);
+        if (!$brazil_info) return;
+        
+        echo '<div class="brazil-order-notice" style="margin: 20px 0; padding: 15px; background: #e7f3ff; border-left: 4px solid #2196F3; border-radius: 4px;">';
+        echo '<p style="margin: 0; font-weight: 500;">';
+        echo '🇧🇷 <strong>Informações Fiscais:</strong> ';
+        echo ($brazil_info['type'] === 'cpf' ? 'CPF' : 'CNPJ') . ': <code>' . esc_html($brazil_info['document']) . '</code>';
+        echo ' (' . ($brazil_info['type'] === 'cpf' ? 'Pessoa Física' : 'Pessoa Jurídica') . ')';
+        echo '</p>';
+        echo '</div>';
+    }
+    
+    /**
+     * 在客户详情后显示 - 另一个位置
+     */
+    public function display_fields_after_customer_details($order) {
+        error_log('Brazil Checkout: display_fields_after_customer_details called');
+        
+        if (!$order) return;
+        
+        $brazil_info = $this->get_brazil_order_info($order);
+        if (!$brazil_info) return;
+        
+        echo '<section class="woocommerce-customer-brazil-details">';
+        echo '<h2 class="woocommerce-column__title">Informações Fiscais Brasileiras</h2>';
+        echo '<address>';
+        echo '<strong>' . ($brazil_info['type'] === 'cpf' ? 'Pessoa Física' : 'Pessoa Jurídica') . '</strong><br>';
+        echo ($brazil_info['type'] === 'cpf' ? 'CPF' : 'CNPJ') . ': ' . esc_html($brazil_info['document']);
+        echo '</address>';
+        echo '</section>';
+    }
+    
+    /**
+     * 调试Hook执行
+     */
+    public function debug_hook_execution($order) {
+        error_log('Brazil Checkout: DEBUG - woocommerce_order_details_after_customer_details hook executed');
+        error_log('Brazil Checkout: DEBUG - Order object type: ' . gettype($order));
+        if (is_object($order)) {
+            error_log('Brazil Checkout: DEBUG - Order ID: ' . $order->get_id());
+        }
+    }
+    
+    /**
+     * 调试view order Hook
+     */
+    public function debug_view_order_hook($order_id) {
+        error_log('Brazil Checkout: DEBUG - woocommerce_view_order hook executed with order ID: ' . $order_id);
+        $order = wc_get_order($order_id);
+        if ($order) {
+            error_log('Brazil Checkout: DEBUG - Order object retrieved successfully');
+        } else {
+            error_log('Brazil Checkout: DEBUG - Failed to retrieve order object');
+        }
+    }
+    
+    /**
+     * 获取订单的巴西信息 - 统一函数
+     */
+    private function get_brazil_order_info($order) {
+        if (!$order) {
+            error_log('Brazil Checkout: get_brazil_order_info - No order provided');
+            return false;
+        }
+        
+        $order_id = $order->get_id();
+        error_log('Brazil Checkout: get_brazil_order_info - Processing order ID: ' . $order_id);
+        
         // 优先检查新的统一文档字段
         $document = $order->get_meta('_brazil_document');
         $document_type = $order->get_meta('_brazil_document_type');
         
+        error_log('Brazil Checkout: New unified fields - Document: ' . $document . ', Type: ' . $document_type);
+        
         if (!empty($document) && !empty($document_type)) {
-            echo '<div class="address"><p><strong>Informações Fiscais:</strong></p>';
-            
-            if ($document_type === 'cpf') {
-                echo '<p><strong>Tipo:</strong> Pessoa Física<br>';
-                echo '<strong>CPF:</strong> ' . esc_html($document) . '</p>';
-            } elseif ($document_type === 'cnpj') {
-                echo '<p><strong>Tipo:</strong> Pessoa Jurídica<br>';
-                echo '<strong>CNPJ:</strong> ' . esc_html($document) . '</p>';
-            }
-            
-            echo '</div>';
-            return;
+            error_log('Brazil Checkout: Found new unified fields data');
+            return array(
+                'document' => $document,
+                'type' => $document_type
+            );
         }
         
         // 后备兼容性：检查旧字段
@@ -1782,19 +2423,727 @@ class Brazil_Checkout_Fields_Blocks {
         $cpf = $order->get_meta('_cpf');
         $cnpj = $order->get_meta('_cnpj');
         
-        if ($customer_type && ($cpf || $cnpj)) {
-            echo '<div class="address"><p><strong>Informações Fiscais:</strong></p>';
-            
-            if ($customer_type === 'pessoa_fisica' && $cpf) {
-                echo '<p><strong>Tipo:</strong> Pessoa Física<br>';
-                echo '<strong>CPF:</strong> ' . esc_html($cpf) . '</p>';
-            } elseif ($customer_type === 'pessoa_juridica' && $cnpj) {
-                echo '<p><strong>Tipo:</strong> Pessoa Jurídica<br>';
-                echo '<strong>CNPJ:</strong> ' . esc_html($cnpj) . '</p>';
+        error_log('Brazil Checkout: Legacy fields - Customer Type: ' . $customer_type . ', CPF: ' . $cpf . ', CNPJ: ' . $cnpj);
+        
+        if ($customer_type === 'pessoa_fisica' && $cpf) {
+            error_log('Brazil Checkout: Found legacy CPF data');
+            return array(
+                'document' => $cpf,
+                'type' => 'cpf'
+            );
+        } elseif ($customer_type === 'pessoa_juridica' && $cnpj) {
+            error_log('Brazil Checkout: Found legacy CNPJ data');
+            return array(
+                'document' => $cnpj,
+                'type' => 'cnpj'
+            );
+        }
+        
+        // 额外检查：直接查找可能的字段变体
+        $possible_fields = array(
+            'brazil_document', 'brazil_cpf', 'brazil_cnpj', 'brazil_customer_type',
+            'billing_brazil_document', 'billing_cpf', 'billing_cnpj'
+        );
+        
+        foreach ($possible_fields as $field) {
+            $value = $order->get_meta($field);
+            if (!empty($value)) {
+                error_log('Brazil Checkout: Found potential field - ' . $field . ': ' . $value);
             }
             
-            echo '</div>';
+            // 也检查带下划线前缀的版本
+            $value_with_prefix = $order->get_meta('_' . $field);
+            if (!empty($value_with_prefix)) {
+                error_log('Brazil Checkout: Found potential field with prefix - _' . $field . ': ' . $value_with_prefix);
+            }
         }
+        
+        // 最后尝试：检查没有前缀的字段
+        $document_no_prefix = $order->get_meta('brazil_document');
+        $customer_type_no_prefix = $order->get_meta('brazil_customer_type');
+        
+        if (!empty($document_no_prefix)) {
+            error_log('Brazil Checkout: Found document without prefix: ' . $document_no_prefix);
+            
+            // 尝试检测类型
+            $detected_type = $this->detect_document_type($document_no_prefix);
+            return array(
+                'document' => $document_no_prefix,
+                'type' => $detected_type
+            );
+        }
+        
+        error_log('Brazil Checkout: No Brazil info found in order meta');
+        return false;
+    }
+    
+    /**
+     * 检测文档类型
+     */
+    private function detect_document_type($document) {
+        $clean_document = preg_replace('/[^0-9]/', '', $document);
+        if (strlen($clean_document) <= 11) {
+            return 'cpf';
+        } else {
+            return 'cnpj';
+        }
+    }
+    
+    /**
+     * 添加调试工具（仅管理员可见）
+     */
+    public function add_debug_tools() {
+        if (!current_user_can('manage_options')) return;
+        
+        // 检查是否在订单查看页面
+        global $wp;
+        if (isset($wp->query_vars['view-order'])) {
+            $order_id = $wp->query_vars['view-order'];
+            ?>
+            <div style="position: fixed; bottom: 10px; right: 10px; background: #333; color: white; padding: 10px; border-radius: 5px; z-index: 9999; font-size: 12px;">
+                <strong>Brazil Checkout Debug</strong><br>
+                Order ID: <?php echo $order_id; ?><br>
+                <a href="javascript:void(0)" onclick="debugBrazilOrder(<?php echo $order_id; ?>)" style="color: #4CAF50;">Debug Order</a>
+            </div>
+            <script>
+            function debugBrazilOrder(orderId) {
+                console.log('Debugging Brazil order:', orderId);
+                
+                // AJAX调用调试函数
+                jQuery.post('<?php echo admin_url('admin-ajax.php'); ?>', {
+                    action: 'debug_brazil_order',
+                    order_id: orderId,
+                    nonce: '<?php echo wp_create_nonce('debug_brazil_order'); ?>'
+                }, function(response) {
+                    console.log('Debug response:', response);
+                    alert('Debug info logged to console and error log');
+                });
+            }
+            </script>
+            <?php
+        }
+    }
+    
+    /**
+     * AJAX调试订单数据
+     */
+    public function debug_brazil_order_ajax() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
+        
+        check_ajax_referer('debug_brazil_order', 'nonce');
+        
+        $order_id = intval($_POST['order_id']);
+        $order = wc_get_order($order_id);
+        
+        if (!$order) {
+            wp_send_json_error('Order not found');
+            return;
+        }
+        
+        // 获取所有meta数据
+        $all_meta = $order->get_meta_data();
+        $debug_info = array(
+            'order_id' => $order_id,
+            'order_status' => $order->get_status(),
+            'billing_country' => $order->get_billing_country(),
+            'meta_data' => array()
+        );
+        
+        foreach ($all_meta as $meta) {
+            $key = $meta->get_data()['key'];
+            $value = $meta->get_data()['value'];
+            $debug_info['meta_data'][$key] = $value;
+        }
+        
+        error_log('Brazil Checkout DEBUG - Full order data: ' . print_r($debug_info, true));
+        
+        wp_send_json_success($debug_info);
+    }
+    
+    /**
+     * Store API订单处理完成时的保存函数
+     */
+    public function store_api_order_processed($order) {
+        error_log('Brazil Checkout: store_api_order_processed called - Order ID: ' . ($order ? $order->get_id() : 'null'));
+        
+        if (!$order) {
+            error_log('Brazil Checkout: No order in store_api_order_processed');
+            return;
+        }
+        
+        // 尝试从session获取数据
+        if (!session_id()) {
+            session_start();
+        }
+        
+        if (isset($_SESSION['brazil_cpf_cnpj']) && !empty($_SESSION['brazil_cpf_cnpj'])) {
+            $document = sanitize_text_field($_SESSION['brazil_cpf_cnpj']);
+            error_log('Brazil Checkout: Found session data in store_api_order_processed: ' . $document);
+            
+            $this->save_document_to_order($order, $document);
+        } else {
+            error_log('Brazil Checkout: No session data found in store_api_order_processed');
+        }
+    }
+    
+    /**
+     * 处理Store API数据
+     */
+    public function process_store_api_data($data, $request) {
+        error_log('Brazil Checkout: process_store_api_data called');
+        error_log('Brazil Checkout: Store API data keys: ' . implode(', ', array_keys($data)));
+        
+        $request_params = $request->get_params();
+        
+        // 检查additional_fields中的巴西数据
+        if (isset($request_params['additional_fields'])) {
+            $additional_fields = $request_params['additional_fields'];
+            error_log('Brazil Checkout: Additional fields: ' . print_r($additional_fields, true));
+            
+            if (isset($additional_fields['brazil_document']) && !empty($additional_fields['brazil_document'])) {
+                $document = sanitize_text_field($additional_fields['brazil_document']);
+                error_log('Brazil Checkout: Found brazil_document in Store API: ' . $document);
+                
+                // 保存到session作为备份
+                if (!session_id()) {
+                    session_start();
+                }
+                $_SESSION['brazil_cpf_cnpj'] = $document;
+                $_SESSION['brazil_billing_country'] = 'BR';
+                $_SESSION['brazil_data_timestamp'] = current_time('timestamp');
+                
+                error_log('Brazil Checkout: Saved to session as backup');
+            }
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * 统一的文档保存函数
+     */
+    private function save_document_to_order($order, $document) {
+        if (!$order || !$document) {
+            error_log('Brazil Checkout: save_document_to_order - Missing order or document');
+            return false;
+        }
+        
+        $order_id = $order->get_id();
+        $clean_document = preg_replace('/[^0-9]/', '', $document);
+        
+        error_log('Brazil Checkout: save_document_to_order - Order: ' . $order_id . ', Document: ' . $document . ', Clean: ' . $clean_document);
+        
+        if (strlen($clean_document) === 11) {
+            // CPF
+            error_log('Brazil Checkout: Saving CPF to order ' . $order_id);
+            $order->update_meta_data('_customer_type', 'pessoa_fisica');
+            $order->update_meta_data('_cpf', $document);
+            $order->update_meta_data('_brazil_document', $document);
+            $order->update_meta_data('_brazil_document_type', 'cpf');
+            
+            // 也保存无前缀版本
+            $order->update_meta_data('brazil_document', $document);
+            $order->update_meta_data('brazil_document_type', 'cpf');
+            
+        } elseif (strlen($clean_document) === 14) {
+            // CNPJ
+            error_log('Brazil Checkout: Saving CNPJ to order ' . $order_id);
+            $order->update_meta_data('_customer_type', 'pessoa_juridica');
+            $order->update_meta_data('_cnpj', $document);
+            $order->update_meta_data('_brazil_document', $document);
+            $order->update_meta_data('_brazil_document_type', 'cnpj');
+            
+            // 也保存无前缀版本
+            $order->update_meta_data('brazil_document', $document);
+            $order->update_meta_data('brazil_document_type', 'cnpj');
+            
+        } else {
+            error_log('Brazil Checkout: Invalid document length: ' . strlen($clean_document));
+            return false;
+        }
+        
+        // 保存订单
+        $order->save();
+        error_log('Brazil Checkout: Document saved successfully to order ' . $order_id);
+        
+        // 清理session
+        if (session_id()) {
+            unset($_SESSION['brazil_cpf_cnpj'], $_SESSION['brazil_billing_country'], $_SESSION['brazil_data_timestamp']);
+        }
+        
+        return true;
+    }
+
+    /**
+     * 新的保存函数 - 订单处理完成时
+     */
+    public function save_checkout_fields_processed($order_id, $posted_data, $order) {
+        error_log('Brazil Checkout: save_checkout_fields_processed called - Order ID: ' . $order_id);
+        error_log('Brazil Checkout: Posted data: ' . print_r($posted_data, true));
+        
+        $this->save_brazil_data($order_id, $posted_data);
+    }
+    
+    /**
+     * 新的保存函数 - 新订单创建时
+     */
+    public function save_checkout_fields_new_order($order_id) {
+        error_log('Brazil Checkout: save_checkout_fields_new_order called - Order ID: ' . $order_id);
+        
+        $this->save_brazil_data($order_id, $_POST);
+    }
+    
+    /**
+     * 新的保存函数 - 感谢页面时（最后的机会）
+     */
+    public function save_checkout_fields_thankyou($order_id) {
+        error_log('🔥 BRAZIL CHECKOUT: save_checkout_fields_thankyou called - Order ID: ' . $order_id);
+        
+        // 检查是否已经有数据
+        $existing_document = get_post_meta($order_id, '_brazil_document', true);
+        if (!empty($existing_document)) {
+            error_log('✅ BRAZIL CHECKOUT: Brazil data already exists, skipping');
+            return;
+        }
+        
+        // 尝试从session获取数据
+        if (!session_id()) {
+            session_start();
+        }
+        
+        $session_data = null;
+        
+        // 1. 先尝试从PHP session获取
+        if (isset($_SESSION['brazil_checkout_data'])) {
+            $session_data = $_SESSION['brazil_checkout_data'];
+            error_log('🎯 BRAZIL CHECKOUT: Found data in PHP session: ' . print_r($session_data, true));
+        }
+        // 2. 再尝试从WooCommerce session获取
+        elseif (WC()->session) {
+            $wc_session_data = WC()->session->get('brazil_checkout_data');
+            if ($wc_session_data) {
+                $session_data = $wc_session_data;
+                error_log('🎯 BRAZIL CHECKOUT: Found data in WC session: ' . print_r($session_data, true));
+            }
+        }
+        
+        if ($session_data && isset($session_data['brazil_document']) && !empty($session_data['brazil_document'])) {
+            error_log('💾 BRAZIL CHECKOUT: Saving session data to order ' . $order_id);
+            $this->save_brazil_data_from_request($session_data, $order_id);
+            
+            // 清理session数据
+            unset($_SESSION['brazil_checkout_data']);
+            if (WC()->session) {
+                WC()->session->__unset('brazil_checkout_data');
+            }
+            error_log('🧹 BRAZIL CHECKOUT: Session data cleaned up');
+        } else {
+            error_log('❌ BRAZIL CHECKOUT: No valid session data found');
+        }
+    }
+    
+    /**
+     * 统一的巴西数据保存函数
+     */
+    private function save_brazil_data($order_id, $data) {
+        if (!$order_id) {
+            error_log('Brazil Checkout: save_brazil_data - No order ID');
+            return false;
+        }
+        
+        // 调试：记录所有传入的数据
+        error_log('Brazil Checkout: save_brazil_data called with order_id=' . $order_id);
+        error_log('Brazil Checkout: Data keys: ' . implode(', ', array_keys($data)));
+        
+        // 记录所有可能包含巴西数据的字段
+        $debug_fields = array();
+        foreach ($data as $key => $value) {
+            if (stripos($key, 'brazil') !== false || 
+                stripos($key, 'cpf') !== false || 
+                stripos($key, 'cnpj') !== false ||
+                stripos($key, 'document') !== false ||
+                $key === 'billing_country' ||
+                $key === 'shipping_country') {
+                $debug_fields[$key] = is_string($value) ? $value : gettype($value);
+            }
+        }
+        error_log('Brazil Checkout: Relevant fields: ' . print_r($debug_fields, true));
+        
+        // 开启session以检查session数据
+        if (!session_id()) {
+            session_start();
+        }
+        
+        // 检查是否是巴西地址
+        $billing_country = isset($data['billing_country']) ? $data['billing_country'] : '';
+        $shipping_country = isset($data['shipping_country']) ? $data['shipping_country'] : '';
+        
+        // 也检查session中的国家信息
+        if (empty($billing_country) && isset($_SESSION['brazil_billing_country'])) {
+            $billing_country = $_SESSION['brazil_billing_country'];
+            error_log('Brazil Checkout: Using session billing country: ' . $billing_country);
+        }
+        
+        if ($billing_country !== 'BR' && $shipping_country !== 'BR') {
+            error_log('Brazil Checkout: save_brazil_data - Not Brazil address (billing: ' . $billing_country . ', shipping: ' . $shipping_country . ')');
+            return false;
+        }
+        
+        // 查找文档数据 - 先检查常规字段，再检查session
+        $document = '';
+        $possible_fields = array(
+            'brazil_document', 
+            'brazil_cpf', 
+            'brazil_cnpj',
+            'billing_brazil_document',
+            'billing_brazil_cpf',
+            'billing_brazil_cnpj',
+            'cpf_cnpj',
+            'brazil_cpf_cnpj',
+            'billing_cpf_cnpj'
+        );
+        
+        // 先在POST数据中查找
+        foreach ($possible_fields as $field) {
+            if (isset($data[$field]) && !empty($data[$field])) {
+                $document = sanitize_text_field($data[$field]);
+                error_log('Brazil Checkout: Found document in field: ' . $field . ' = ' . $document);
+                break;
+            }
+        }
+        
+        // 也检查JavaScript可能使用的字段名
+        if (empty($document)) {
+            $js_fields = array('document', 'brazil-document', 'cpf', 'cnpj');
+            foreach ($js_fields as $field) {
+                if (isset($data[$field]) && !empty($data[$field])) {
+                    $document = sanitize_text_field($data[$field]);
+                    error_log('Brazil Checkout: Found document in JS field: ' . $field . ' = ' . $document);
+                    break;
+                }
+            }
+        }
+        
+        // 如果没有找到文档数据，检查session
+        if (empty($document) && isset($_SESSION['brazil_cpf_cnpj']) && !empty($_SESSION['brazil_cpf_cnpj'])) {
+            $document = sanitize_text_field($_SESSION['brazil_cpf_cnpj']);
+            error_log('Brazil Checkout: Found document in session: ' . $document);
+        }
+        
+        if (empty($document)) {
+            error_log('Brazil Checkout: No document data found in form data or session');
+            return false;
+        }
+        
+        $clean_document = preg_replace('/[^0-9]/', '', $document);
+        error_log('Brazil Checkout: Clean document: ' . $clean_document . ' (length: ' . strlen($clean_document) . ')');
+        
+        // 保存数据
+        if (strlen($clean_document) === 11) {
+            // CPF
+            error_log('Brazil Checkout: Saving unified CPF data for order ' . $order_id);
+            update_post_meta($order_id, '_brazil_document', $document);
+            update_post_meta($order_id, '_brazil_document_type', 'cpf');
+            update_post_meta($order_id, '_customer_type', 'pessoa_fisica');
+            update_post_meta($order_id, '_cpf', $document);
+            
+            // 也保存无前缀版本
+            update_post_meta($order_id, 'brazil_document', $document);
+            update_post_meta($order_id, 'brazil_document_type', 'cpf');
+            
+            // 清理session数据
+            unset($_SESSION['brazil_cpf_cnpj'], $_SESSION['brazil_billing_country'], $_SESSION['brazil_data_timestamp']);
+            
+            error_log('Brazil Checkout: CPF saved successfully for order ' . $order_id);
+            return true;
+        } elseif (strlen($clean_document) === 14) {
+            // CNPJ
+            error_log('Brazil Checkout: Saving unified CNPJ data for order ' . $order_id);
+            update_post_meta($order_id, '_brazil_document', $document);
+            update_post_meta($order_id, '_brazil_document_type', 'cnpj');
+            update_post_meta($order_id, '_customer_type', 'pessoa_juridica');
+            update_post_meta($order_id, '_cnpj', $document);
+            
+            // 也保存无前缀版本
+            update_post_meta($order_id, 'brazil_document', $document);
+            update_post_meta($order_id, 'brazil_document_type', 'cnpj');
+            
+            // 清理session数据
+            unset($_SESSION['brazil_cpf_cnpj'], $_SESSION['brazil_billing_country'], $_SESSION['brazil_data_timestamp']);
+            
+            error_log('Brazil Checkout: CNPJ saved successfully for order ' . $order_id);
+            return true;
+        } else {
+            error_log('Brazil Checkout: Invalid document length: ' . strlen($clean_document));
+            return false;
+        }
+    }
+    
+    /**
+     * 验证文档格式
+     */
+    private function validate_document_format($document, $type) {
+        if ($type === 'cpf') {
+            return $this->validate_cpf($document);
+        } elseif ($type === 'cnpj') {
+            return $this->validate_cnpj($document);
+        }
+        return false;
+    }
+    
+    /**
+     * 注册WooCommerce块编辑器字段支持
+     */
+    public function register_checkout_fields_block_support() {
+        if (function_exists('woocommerce_store_api_register_endpoint_data')) {
+            woocommerce_store_api_register_endpoint_data(array(
+                'endpoint'        => 'checkout',
+                'namespace'       => 'brazil-checkout-fields',
+                'data_callback'   => array($this, 'store_api_checkout_data'),
+                'schema_callback' => array($this, 'store_api_checkout_schema'),
+                'schema_type'     => ARRAY_A,
+            ));
+        }
+    }
+    
+    /**
+     * 初始化Store API支持
+     */
+    public function init_store_api_support() {
+        // 确保WooCommerce Store API可以处理我们的字段
+        add_filter('woocommerce_store_api_checkout_data', array($this, 'add_brazil_fields_to_checkout_data'), 10, 2);
+    }
+    
+    /**
+     * 注册Store API字段
+     */
+    public function register_store_api_fields() {
+        if (function_exists('register_rest_field')) {
+            register_rest_field('checkout', 'brazil_document', array(
+                'get_callback' => array($this, 'get_brazil_document_field'),
+                'update_callback' => array($this, 'update_brazil_document_field'),
+                'schema' => array(
+                    'description' => 'Brazil document (CPF or CNPJ)',
+                    'type' => 'string',
+                    'context' => array('view', 'edit'),
+                ),
+            ));
+        }
+    }
+    
+    /**
+     * Store API数据回调
+     */
+    public function store_api_checkout_data() {
+        return array(
+            'brazil_document' => '',
+            'brazil_customer_type' => '',
+            'brazil_cpf' => '',
+            'brazil_cnpj' => '',
+        );
+    }
+    
+    /**
+     * Store API架构回调
+     */
+    public function store_api_checkout_schema() {
+        return array(
+            'brazil_document' => array(
+                'description' => 'Brazil document (CPF or CNPJ)',
+                'type' => 'string',
+                'context' => array('view', 'edit'),
+                'default' => '',
+            ),
+            'brazil_customer_type' => array(
+                'description' => 'Brazil customer type',
+                'type' => 'string',
+                'context' => array('view', 'edit'),
+                'default' => '',
+                'enum' => array('pessoa_fisica', 'pessoa_juridica', ''),
+            ),
+            'brazil_cpf' => array(
+                'description' => 'Brazil CPF',
+                'type' => 'string',
+                'context' => array('view', 'edit'),
+                'default' => '',
+            ),
+            'brazil_cnpj' => array(
+                'description' => 'Brazil CNPJ',
+                'type' => 'string',
+                'context' => array('view', 'edit'),
+                'default' => '',
+            ),
+        );
+    }
+    
+    /**
+     * 添加巴西字段到checkout数据
+     */
+    public function add_brazil_fields_to_checkout_data($data, $request) {
+        $request_params = $request->get_params();
+        
+        // 检查是否有巴西字段数据
+        if (isset($request_params['brazil_document'])) {
+            $data['brazil_document'] = sanitize_text_field($request_params['brazil_document']);
+            error_log('Brazil Fields Store API: Found brazil_document in request: ' . $request_params['brazil_document']);
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * 获取巴西文档字段
+     */
+    public function get_brazil_document_field($object) {
+        return get_post_meta($object['id'], '_brazil_document', true);
+    }
+    
+    /**
+     * 调试Store API请求
+     */
+    public function debug_store_api_requests() {
+        error_log('🔍 BRAZIL CHECKOUT: debug_store_api_requests initialized');
+    }
+    
+    /**
+     * 调试REST请求
+     */
+    public function debug_rest_request($result, $server, $request) {
+        $route = $request->get_route();
+        
+        if (strpos($route, '/wc/store/v1/checkout') !== false) {
+            error_log('� BRAZIL CHECKOUT: Store API checkout request detected');
+            error_log('� Route: ' . $route);
+            error_log('🔥 Method: ' . $request->get_method());
+            
+            // 获取JSON参数而不是普通参数
+            $params = $request->get_json_params();
+            if (!$params) {
+                $params = $request->get_params();
+            }
+            
+            error_log('🔥 All request data: ' . print_r($params, true));
+            
+            if (isset($params['additional_fields'])) {
+                error_log('🎯 BRAZIL CHECKOUT: Additional fields found!');
+                error_log('🎯 Additional fields: ' . print_r($params['additional_fields'], true));
+                
+                // 如果发现巴西数据，立即保存到session
+                if (isset($params['additional_fields']['brazil_document'])) {
+                    error_log('🚀 BRAZIL CHECKOUT: Found brazil_document, saving to session!');
+                    $this->save_brazil_data_from_request($params['additional_fields']);
+                }
+            } else {
+                error_log('❌ BRAZIL CHECKOUT: No additional_fields in request');
+            }
+            
+            // 检查所有参数中是否有巴西相关数据
+            $brazil_data = array();
+            foreach ($params as $key => $value) {
+                if (stripos($key, 'brazil') !== false || 
+                    stripos($key, 'cpf') !== false || 
+                    stripos($key, 'cnpj') !== false) {
+                    $brazil_data[$key] = $value;
+                }
+                // 如果是数组，也检查内部
+                if (is_array($value)) {
+                    foreach ($value as $subkey => $subvalue) {
+                        if (stripos($subkey, 'brazil') !== false || 
+                            stripos($subkey, 'cpf') !== false || 
+                            stripos($subkey, 'cnpj') !== false) {
+                            $brazil_data[$key][$subkey] = $subvalue;
+                        }
+                    }
+                }
+            }
+            
+            if (!empty($brazil_data)) {
+                error_log('🎯 BRAZIL CHECKOUT: Brazil data found in request!');
+                error_log('🎯 Brazil data: ' . print_r($brazil_data, true));
+            } else {
+                error_log('❌ BRAZIL CHECKOUT: No Brazil data found in entire request');
+            }
+        }
+        
+        return $result;
+    }
+
+    /**
+     * 从请求中保存巴西数据的通用函数
+     */
+    public function save_brazil_data_from_request($additional_fields, $order_id = null) {
+        error_log('💾 BRAZIL CHECKOUT: save_brazil_data_from_request called');
+        error_log('💾 Data: ' . print_r($additional_fields, true));
+        error_log('💾 Order ID: ' . ($order_id ? $order_id : 'not provided'));
+        
+        if (!isset($additional_fields['brazil_document']) || empty($additional_fields['brazil_document'])) {
+            error_log('❌ BRAZIL CHECKOUT: No brazil_document found in additional_fields');
+            return false;
+        }
+        
+        $brazil_document = sanitize_text_field($additional_fields['brazil_document']);
+        $brazil_customer_type = isset($additional_fields['brazil_customer_type']) ? sanitize_text_field($additional_fields['brazil_customer_type']) : '';
+        $brazil_cpf = isset($additional_fields['brazil_cpf']) ? sanitize_text_field($additional_fields['brazil_cpf']) : '';
+        $brazil_cnpj = isset($additional_fields['brazil_cnpj']) ? sanitize_text_field($additional_fields['brazil_cnpj']) : '';
+        
+        error_log('📝 BRAZIL CHECKOUT: Processed data - Document: ' . $brazil_document . ', Type: ' . $brazil_customer_type);
+        
+        // 总是保存到session作为备份
+        if (!session_id()) {
+            session_start();
+        }
+        $_SESSION['brazil_checkout_data'] = array(
+            'brazil_document' => $brazil_document,
+            'brazil_customer_type' => $brazil_customer_type,
+            'brazil_cpf' => $brazil_cpf,
+            'brazil_cnpj' => $brazil_cnpj,
+            'timestamp' => time()
+        );
+        error_log('✅ BRAZIL CHECKOUT: Data saved to session as backup');
+        
+        // 如果没有提供订单ID，只保存到session
+        if (!$order_id) {
+            error_log('💾 BRAZIL CHECKOUT: No order ID provided, data saved to session only');
+            return true;
+        }
+        
+        // 保存到订单
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            error_log('❌ BRAZIL CHECKOUT: Invalid order ID: ' . $order_id);
+            return false;
+        }
+        
+        error_log('📦 BRAZIL CHECKOUT: Saving to order ' . $order_id);
+        
+        // 保存新的统一字段
+        $order->update_meta_data('_brazil_document', $brazil_document);
+        $order->update_meta_data('_brazil_customer_type', $brazil_customer_type);
+        
+        // 保存旧的兼容字段
+        if ($brazil_cpf) {
+            $order->update_meta_data('_billing_cpf', $brazil_cpf);
+        }
+        if ($brazil_cnpj) {
+            $order->update_meta_data('_billing_cnpj', $brazil_cnpj);
+        }
+        if ($brazil_customer_type) {
+            $order->update_meta_data('_billing_persontype', $brazil_customer_type === 'pessoa_fisica' ? '1' : '2');
+        }
+        
+        $order->save();
+        
+        error_log('✅ BRAZIL CHECKOUT: Data saved to order ' . $order_id . ' successfully!');
+        return true;
+    }
+
+    /**
+     * 更新巴西文档字段
+     */
+    public function update_brazil_document_field($value, $object) {
+        return update_post_meta($object->ID, '_brazil_document', sanitize_text_field($value));
     }
 }
 
