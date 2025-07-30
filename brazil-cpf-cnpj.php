@@ -3370,7 +3370,14 @@ class Brazil_Checkout_Fields_Blocks {
             if (isset($_POST['clear_cache']) && check_admin_referer('brazil_clear_cache', 'cache_nonce')) {
                 delete_transient('brazil_cpf_cnpj_stats');
                 delete_transient('brazil_cpf_cnpj_recent_orders');
-                echo '<div class="notice notice-success"><p>✅ 缓存已清理，数据将重新加载。</p></div>';
+                // 清理WooCommerce相关缓存
+                if (function_exists('wc_delete_shop_order_transients')) {
+                    wc_delete_shop_order_transients();
+                }
+                // 清理对象缓存
+                wp_cache_flush();
+                echo '<div class="notice notice-success"><p>✅ 缓存已清理，数据将重新加载。页面将自动刷新...</p></div>';
+                echo '<script>setTimeout(function(){ window.location.reload(); }, 2000);</script>';
             }
             ?>
             
@@ -3424,6 +3431,24 @@ class Brazil_Checkout_Fields_Blocks {
                     <tr style="background: #f1f1f1;">
                         <td style="padding: 8px; font-weight: bold;">文档字段:</td>
                         <td style="padding: 8px;"><code><?php echo esc_html($stats['current_field_name']); ?></code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold;">订单存储模式:</td>
+                        <td style="padding: 8px;">
+                            <?php 
+                            $storage_type = isset($stats['storage_type']) ? $stats['storage_type'] : 'Unknown';
+                            $storage_color = ($storage_type === 'HPOS') ? '#28a745' : (($storage_type === 'Legacy') ? '#ffc107' : '#dc3545');
+                            $storage_icon = ($storage_type === 'HPOS') ? '🚀' : (($storage_type === 'Legacy') ? '📦' : '❌');
+                            ?>
+                            <span style="color: <?php echo $storage_color; ?>; font-weight: bold;">
+                                <?php echo $storage_icon; ?> <?php echo esc_html($storage_type); ?>
+                            </span>
+                            <?php if ($storage_type === 'HPOS'): ?>
+                                <small style="color: #666; margin-left: 10px;">(高性能订单存储)</small>
+                            <?php elseif ($storage_type === 'Legacy'): ?>
+                                <small style="color: #666; margin-left: 10px;">(传统文章存储)</small>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 </table>
             </div>
@@ -3587,11 +3612,16 @@ class Brazil_Checkout_Fields_Blocks {
      * 获取巴西数据统计
      */
     private function get_brazil_data_statistics() {
+        // 强制清理缓存以测试新的HPOS检测
+        if (isset($_GET['force_refresh'])) {
+            delete_transient('brazil_cpf_cnpj_stats');
+        }
+        
         // 检查缓存
         $cache_key = 'brazil_cpf_cnpj_stats';
         $cached_stats = get_transient($cache_key);
         
-        if ($cached_stats !== false) {
+        if ($cached_stats !== false && !isset($_GET['force_refresh'])) {
             return $cached_stats;
         }
         
@@ -3602,61 +3632,19 @@ class Brazil_Checkout_Fields_Blocks {
         $document_field = BRAZIL_DOCUMENT_FIELD;
         
         try {
-            // 使用简化的查询，添加超时保护
+            // 添加超时保护
             set_time_limit(30);
             
-            // 统计当前字段的订单
-            $current_field_orders = $wpdb->get_var($wpdb->prepare("
-                SELECT COUNT(DISTINCT post_id) 
-                FROM {$wpdb->postmeta} 
-                WHERE meta_key = %s AND meta_value != ''
-                LIMIT 1000
-            ", $document_field));
+            // 简化的HPOS检测 - 检查WooCommerce设置和表
+            $hpos_enabled = $this->detect_hpos_mode();
             
-            // 统计所有巴西字段的订单（限制结果数量）
-            $all_brazil_orders = $wpdb->get_var($wpdb->prepare("
-                SELECT COUNT(DISTINCT post_id) 
-                FROM {$wpdb->postmeta} 
-                WHERE (
-                    meta_key = %s 
-                    OR meta_key = '_brazil_document' 
-                    OR meta_key = '_billing_cpf' 
-                    OR meta_key = '_billing_cnpj'
-                ) 
-                AND meta_value != ''
-                LIMIT 1000
-            ", $document_field));
-            
-            // 简化的CPF统计
-            $cpf_orders = $wpdb->get_var($wpdb->prepare("
-                SELECT COUNT(DISTINCT post_id) 
-                FROM {$wpdb->postmeta} 
-                WHERE (
-                    (meta_key = %s AND meta_value = 'pessoa_fisica')
-                    OR (meta_key = '_billing_cpf' AND meta_value != '')
-                )
-                LIMIT 1000
-            ", $customer_type_field));
-            
-            // 简化的CNPJ统计
-            $cnpj_orders = $wpdb->get_var($wpdb->prepare("
-                SELECT COUNT(DISTINCT post_id) 
-                FROM {$wpdb->postmeta} 
-                WHERE (
-                    (meta_key = %s AND meta_value = 'pessoa_juridica')
-                    OR (meta_key = '_billing_cnpj' AND meta_value != '')
-                )
-                LIMIT 1000
-            ", $customer_type_field));
-            
-            $stats = array(
-                'total' => intval($all_brazil_orders),
-                'cpf' => intval($cpf_orders),
-                'cnpj' => intval($cnpj_orders),
-                'current_field' => intval($current_field_orders),
-                'current_field_name' => $document_field,
-                'customer_type_field_name' => $customer_type_field
-            );
+            if ($hpos_enabled) {
+                // 使用HPOS表查询
+                $stats = $this->get_hpos_statistics($customer_type_field, $document_field);
+            } else {
+                // 使用传统的postmeta表查询
+                $stats = $this->get_legacy_statistics($customer_type_field, $document_field);
+            }
             
             // 缓存结果5分钟
             set_transient($cache_key, $stats, 300);
@@ -3673,9 +3661,222 @@ class Brazil_Checkout_Fields_Blocks {
                 'cnpj' => 0,
                 'current_field' => 0,
                 'current_field_name' => $document_field,
-                'customer_type_field_name' => $customer_type_field
+                'customer_type_field_name' => $customer_type_field,
+                'storage_type' => 'error'
             );
         }
+    }
+    
+    /**
+     * 检测HPOS模式的统一方法 - 通过比较数据量来判断
+     */
+    private function detect_hpos_mode() {
+        global $wpdb;
+        
+        $hpos_orders_count = 0;
+        $legacy_orders_count = 0;
+        
+        try {
+            // 检查HPOS表（wc_orders）中的订单数量
+            $orders_table = $wpdb->prefix . 'wc_orders';
+            $orders_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $orders_table)) === $orders_table;
+            
+            if ($orders_exists) {
+                $hpos_orders_count = intval($wpdb->get_var("SELECT COUNT(*) FROM {$orders_table}"));
+            }
+            
+            // 检查传统表（wp_posts）中shop_order类型的数量
+            $legacy_orders_count = intval($wpdb->get_var("
+                SELECT COUNT(*) 
+                FROM {$wpdb->posts} 
+                WHERE post_type = 'shop_order'
+            "));
+            
+            // 比较两种存储模式的数据量
+            // 如果HPOS表有更多数据，说明使用HPOS模式
+            // 如果传统表有更多数据，说明使用传统模式
+            // 如果两者都有数据但HPOS更多，优先选择HPOS
+            
+            $is_hpos = false;
+            $detection_reason = '';
+            
+            if ($hpos_orders_count > 0 && $legacy_orders_count > 0) {
+                // 两种表都有数据，选择数据更多的
+                if ($hpos_orders_count >= $legacy_orders_count) {
+                    $is_hpos = true;
+                    $detection_reason = "HPOS表有 {$hpos_orders_count} 个订单，传统表有 {$legacy_orders_count} 个订单，选择HPOS";
+                } else {
+                    $is_hpos = false;
+                    $detection_reason = "传统表有 {$legacy_orders_count} 个订单，HPOS表有 {$hpos_orders_count} 个订单，选择传统模式";
+                }
+            } elseif ($hpos_orders_count > 0) {
+                // 只有HPOS表有数据
+                $is_hpos = true;
+                $detection_reason = "仅HPOS表有数据 ({$hpos_orders_count} 个订单)";
+            } elseif ($legacy_orders_count > 0) {
+                // 只有传统表有数据
+                $is_hpos = false;
+                $detection_reason = "仅传统表有数据 ({$legacy_orders_count} 个订单)";
+            } else {
+                // 两种表都没有数据，检查WooCommerce设置
+                $hpos_setting = get_option('woocommerce_custom_orders_table_enabled', 'no');
+                if ($hpos_setting === 'yes') {
+                    $is_hpos = true;
+                    $detection_reason = "无订单数据，根据WC设置选择HPOS";
+                } else {
+                    $is_hpos = false;
+                    $detection_reason = "无订单数据，默认选择传统模式";
+                }
+            }
+            
+            // 将检测结果保存以供调试使用
+            $this->hpos_detection_info = array(
+                'hpos_orders_count' => $hpos_orders_count,
+                'legacy_orders_count' => $legacy_orders_count,
+                'is_hpos' => $is_hpos,
+                'detection_reason' => $detection_reason,
+                'hpos_table_exists' => $orders_exists
+            );
+            
+            return $is_hpos;
+            
+        } catch (Exception $e) {
+            // 如果检测失败，默认使用传统模式
+            $this->hpos_detection_info = array(
+                'hpos_orders_count' => 0,
+                'legacy_orders_count' => 0,
+                'is_hpos' => false,
+                'detection_reason' => '检测失败，默认传统模式: ' . $e->getMessage(),
+                'hpos_table_exists' => false
+            );
+            
+            return false;
+        }
+    }
+    
+    /**
+     * 获取HPOS统计数据
+     */
+    private function get_hpos_statistics($customer_type_field, $document_field) {
+        global $wpdb;
+        
+        // HPOS表名
+        $orders_meta_table = $wpdb->prefix . 'wc_orders_meta';
+        
+        // 统计当前字段的订单
+        $current_field_orders = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(DISTINCT order_id) 
+            FROM {$orders_meta_table} 
+            WHERE meta_key = %s AND meta_value != ''
+            LIMIT 1000
+        ", $document_field));
+        
+        // 统计所有巴西字段的订单
+        $all_brazil_orders = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(DISTINCT order_id) 
+            FROM {$orders_meta_table} 
+            WHERE (
+                meta_key = %s 
+                OR meta_key = '_brazil_document' 
+                OR meta_key = '_billing_cpf' 
+                OR meta_key = '_billing_cnpj'
+            ) 
+            AND meta_value != ''
+            LIMIT 1000
+        ", $document_field));
+        
+        // 统计CPF订单
+        $cpf_orders = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(DISTINCT order_id) 
+            FROM {$orders_meta_table} 
+            WHERE (
+                (meta_key = %s AND meta_value = 'pessoa_fisica')
+                OR (meta_key = '_billing_cpf' AND meta_value != '')
+            )
+            LIMIT 1000
+        ", $customer_type_field));
+        
+        // 统计CNPJ订单
+        $cnpj_orders = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(DISTINCT order_id) 
+            FROM {$orders_meta_table} 
+            WHERE (
+                (meta_key = %s AND meta_value = 'pessoa_juridica')
+                OR (meta_key = '_billing_cnpj' AND meta_value != '')
+            )
+            LIMIT 1000
+        ", $customer_type_field));
+        
+        return array(
+            'total' => intval($all_brazil_orders),
+            'cpf' => intval($cpf_orders),
+            'cnpj' => intval($cnpj_orders),
+            'current_field' => intval($current_field_orders),
+            'current_field_name' => $document_field,
+            'customer_type_field_name' => $customer_type_field,
+            'storage_type' => 'HPOS'
+        );
+    }
+    
+    /**
+     * 获取传统postmeta统计数据
+     */
+    private function get_legacy_statistics($customer_type_field, $document_field) {
+        global $wpdb;
+        
+        // 统计当前字段的订单
+        $current_field_orders = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(DISTINCT post_id) 
+            FROM {$wpdb->postmeta} 
+            WHERE meta_key = %s AND meta_value != ''
+            LIMIT 1000
+        ", $document_field));
+        
+        // 统计所有巴西字段的订单
+        $all_brazil_orders = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(DISTINCT post_id) 
+            FROM {$wpdb->postmeta} 
+            WHERE (
+                meta_key = %s 
+                OR meta_key = '_brazil_document' 
+                OR meta_key = '_billing_cpf' 
+                OR meta_key = '_billing_cnpj'
+            ) 
+            AND meta_value != ''
+            LIMIT 1000
+        ", $document_field));
+        
+        // 统计CPF订单
+        $cpf_orders = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(DISTINCT post_id) 
+            FROM {$wpdb->postmeta} 
+            WHERE (
+                (meta_key = %s AND meta_value = 'pessoa_fisica')
+                OR (meta_key = '_billing_cpf' AND meta_value != '')
+            )
+            LIMIT 1000
+        ", $customer_type_field));
+        
+        // 统计CNPJ订单
+        $cnpj_orders = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(DISTINCT post_id) 
+            FROM {$wpdb->postmeta} 
+            WHERE (
+                (meta_key = %s AND meta_value = 'pessoa_juridica')
+                OR (meta_key = '_billing_cnpj' AND meta_value != '')
+            )
+            LIMIT 1000
+        ", $customer_type_field));
+        
+        return array(
+            'total' => intval($all_brazil_orders),
+            'cpf' => intval($cpf_orders),
+            'cnpj' => intval($cnpj_orders),
+            'current_field' => intval($current_field_orders),
+            'current_field_name' => $document_field,
+            'customer_type_field_name' => $customer_type_field,
+            'storage_type' => 'Legacy'
+        );
     }
     
     /**
@@ -3831,9 +4032,104 @@ class Brazil_Checkout_Fields_Blocks {
         try {
             set_time_limit(30);
             
-            echo '<h4>数据库中的相关字段 (限制前20个):</h4>';
+            // 检查存储模式 - 使用统一的检测方法
+            $hpos_enabled = $this->detect_hpos_mode();
             
-            // 简化的字段查询
+            echo '<h4>WooCommerce 存储模式检测:</h4>';
+            echo '<div style="background: ' . ($hpos_enabled ? '#d4edda' : '#fff3cd') . '; padding: 10px; border-radius: 5px; margin: 10px 0;">';
+            
+            // 显示详细的检测过程
+            echo '<h5>检测过程:</h5>';
+            echo '<ul>';
+            
+            // 检测WooCommerce设置
+            $hpos_setting = get_option('woocommerce_custom_orders_table_enabled', 'no');
+            echo '<li><strong>WC设置检测:</strong> woocommerce_custom_orders_table_enabled = ' . $hpos_setting . '</li>';
+            
+            // 检测数据库表
+            $orders_table = $wpdb->prefix . 'wc_orders';
+            $orders_meta_table = $wpdb->prefix . 'wc_orders_meta';
+            $orders_exists = $wpdb->get_var("SHOW TABLES LIKE '{$orders_table}'") === $orders_table;
+            $meta_exists = $wpdb->get_var("SHOW TABLES LIKE '{$orders_meta_table}'") === $orders_meta_table;
+            
+            echo '<li><strong>数据库表检测:</strong></li>';
+            echo '<ul>';
+            echo '<li>' . $orders_table . ' 表存在: ' . ($orders_exists ? '✅ 是' : '❌ 否') . '</li>';
+            echo '<li>' . $orders_meta_table . ' 表存在: ' . ($meta_exists ? '✅ 是' : '❌ 否') . '</li>';
+            
+            if ($orders_exists) {
+                $order_count = $wpdb->get_var("SELECT COUNT(*) FROM {$orders_table}");
+                echo '<li>' . $orders_table . ' 记录数: ' . $order_count . '</li>';
+            }
+            
+            if ($meta_exists) {
+                $meta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$orders_meta_table}");
+                echo '<li>' . $orders_meta_table . ' 记录数: ' . $meta_count . '</li>';
+            }
+            echo '</ul>';
+            
+            // 检测API可用性
+            $orderutil_available = class_exists('Automattic\WooCommerce\Utilities\OrderUtil');
+            echo '<li><strong>WC OrderUtil类:</strong> ' . ($orderutil_available ? '✅ 可用' : '❌ 不可用') . '</li>';
+            
+            if ($orderutil_available) {
+                try {
+                    $api_result = \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+                    echo '<li><strong>OrderUtil检测结果:</strong> ' . ($api_result ? '✅ HPOS启用' : '❌ HPOS未启用') . '</li>';
+                } catch (Exception $e) {
+                    echo '<li><strong>OrderUtil检测错误:</strong> ' . esc_html($e->getMessage()) . '</li>';
+                }
+            }
+            
+            echo '</ul>';
+            
+            if ($hpos_enabled) {
+                echo '<p><strong>🚀 最终结果: 高性能订单存储 (HPOS)</strong></p>';
+                echo '<p>数据存储在: <code>wp_wc_orders</code> 和 <code>wp_wc_orders_meta</code> 表中</p>';
+            } else {
+                echo '<p><strong>📦 最终结果: 传统文章存储</strong></p>';
+                echo '<p>数据存储在: <code>wp_posts</code> 和 <code>wp_postmeta</code> 表中</p>';
+            }
+            echo '</div>';
+            
+            if ($hpos_enabled) {
+                // 检查HPOS表中的数据
+                echo '<h4>HPOS表中的相关字段 (限制前20个):</h4>';
+                $orders_meta_table = $wpdb->prefix . 'wc_orders_meta';
+                
+                $hpos_fields = $wpdb->get_results("
+                    SELECT meta_key, COUNT(*) as count, COUNT(DISTINCT order_id) as unique_orders
+                    FROM {$orders_meta_table} 
+                    WHERE meta_key LIKE '%brazil%' 
+                       OR meta_key LIKE '%cpf%' 
+                       OR meta_key LIKE '%cnpj%'
+                    GROUP BY meta_key 
+                    ORDER BY count DESC
+                    LIMIT 20
+                ");
+                
+                if ($hpos_fields) {
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr><th>字段名</th><th>记录数</th><th>唯一订单数</th></tr></thead>';
+                    echo '<tbody>';
+                    
+                    foreach ($hpos_fields as $field) {
+                        echo '<tr>';
+                        echo '<td><code>' . esc_html($field->meta_key) . '</code></td>';
+                        echo '<td>' . $field->count . '</td>';
+                        echo '<td>' . $field->unique_orders . '</td>';
+                        echo '</tr>';
+                    }
+                    echo '</tbody></table>';
+                } else {
+                    echo '<p>❌ HPOS表中没有找到任何相关字段。</p>';
+                }
+            } else {
+                // 检查传统postmeta表中的数据
+                echo '<h4>PostMeta表中的相关字段 (限制前20个):</h4>';
+            }
+            
+            // 无论哪种模式都检查postmeta表（用于对比）
             $brazil_fields = $wpdb->get_results("
                 SELECT meta_key, COUNT(*) as count, COUNT(DISTINCT post_id) as unique_orders
                 FROM {$wpdb->postmeta} 
@@ -3845,7 +4141,27 @@ class Brazil_Checkout_Fields_Blocks {
                 LIMIT 20
             ");
             
-            if ($brazil_fields) {
+            if (!$hpos_enabled) {
+                // 传统模式时显示postmeta结果
+                if ($brazil_fields) {
+                    echo '<table class="wp-list-table widefat fixed striped">';
+                    echo '<thead><tr><th>字段名</th><th>记录数</th><th>唯一订单数</th></tr></thead>';
+                    echo '<tbody>';
+                    
+                    foreach ($brazil_fields as $field) {
+                        echo '<tr>';
+                        echo '<td><code>' . esc_html($field->meta_key) . '</code></td>';
+                        echo '<td>' . $field->count . '</td>';
+                        echo '<td>' . $field->unique_orders . '</td>';
+                        echo '</tr>';
+                    }
+                    echo '</tbody></table>';
+                } else {
+                    echo '<p>❌ PostMeta表中没有找到任何相关字段。</p>';
+                }
+            } elseif ($brazil_fields) {
+                // HPOS模式时显示postmeta作为对比
+                echo '<h4>PostMeta表中的遗留数据 (仅供对比):</h4>';
                 echo '<table class="wp-list-table widefat fixed striped">';
                 echo '<thead><tr><th>字段名</th><th>记录数</th><th>唯一订单数</th></tr></thead>';
                 echo '<tbody>';
@@ -3858,8 +4174,7 @@ class Brazil_Checkout_Fields_Blocks {
                     echo '</tr>';
                 }
                 echo '</tbody></table>';
-            } else {
-                echo '<p>❌ 没有找到任何相关字段。</p>';
+                echo '<p><small>注意: 在HPOS模式下，这些可能是旧的遗留数据。</small></p>';
             }
             
             echo '<h4>当前插件配置:</h4>';
@@ -3867,6 +4182,7 @@ class Brazil_Checkout_Fields_Blocks {
             echo '<li><strong>BRAZIL_CUSTOMER_TYPE_FIELD:</strong> <code>' . BRAZIL_CUSTOMER_TYPE_FIELD . '</code></li>';
             echo '<li><strong>BRAZIL_DOCUMENT_FIELD:</strong> <code>' . BRAZIL_DOCUMENT_FIELD . '</code></li>';
             echo '<li><strong>插件版本:</strong> 2.4.0</li>';
+            echo '<li><strong>存储模式:</strong> ' . ($hpos_enabled ? 'HPOS (高性能订单存储)' : 'Legacy (传统文章存储)') . '</li>';
             echo '</ul>';
             
         } catch (Exception $e) {
