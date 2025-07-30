@@ -552,10 +552,7 @@ class Brazil_Checkout_Fields_Blocks {
                 setupFieldListeners();
                 setupValidation();
                 
-                // 初始化面板显示状态
-                setTimeout(function() {
-                    checkCountryAndToggleBrazilFields();
-                }, 1000);
+                // 初始化面板显示状态将由setupFieldListeners处理，避免重复调用
             }
             
             function injectBrazilFieldsToFieldsBlock() {
@@ -566,10 +563,7 @@ class Brazil_Checkout_Fields_Blocks {
                 setupFieldListeners();
                 setupValidation();
                 
-                // 初始化面板显示状态
-                setTimeout(function() {
-                    checkCountryAndToggleBrazilFields();
-                }, 1000);
+                // 初始化面板显示状态将由setupFieldListeners处理，避免重复调用
             }
             
             function injectBrazilFieldsToCheckoutBlock() {
@@ -588,10 +582,7 @@ class Brazil_Checkout_Fields_Blocks {
                 setupFieldListeners();
                 setupValidation();
                 
-                // 初始化面板显示状态
-                setTimeout(function() {
-                    checkCountryAndToggleBrazilFields();
-                }, 1000);
+                // 初始化面板显示状态将由setupFieldListeners处理，避免重复调用
             }
             
             function injectBrazilFieldsFallback() {
@@ -602,14 +593,30 @@ class Brazil_Checkout_Fields_Blocks {
                 setupFieldListeners();
                 setupValidation();
                 
-                // 初始化面板显示状态
-                setTimeout(function() {
-                    checkCountryAndToggleBrazilFields();
-                }, 1000);
+                // 初始化面板显示状态将由setupFieldListeners处理，避免重复调用
             }
             
-            // 全局的国家检查和面板切换函数
+            // 全局的国家检查和面板切换函数 - 添加防抖机制
+            var brazilPanelToggleTimeout = null;
+            var lastCountryCheckTime = 0;
+            var isTogglingPanel = false;
+            
             function checkCountryAndToggleBrazilFields() {
+                // 防抖：如果正在切换或者刚刚检查过，跳过
+                var now = Date.now();
+                if (isTogglingPanel || (now - lastCountryCheckTime < 200)) {
+                    console.log('跳过重复的国家检查 (防抖)');
+                    return;
+                }
+                
+                lastCountryCheckTime = now;
+                isTogglingPanel = true;
+                
+                // 清除之前的定时器
+                if (brazilPanelToggleTimeout) {
+                    clearTimeout(brazilPanelToggleTimeout);
+                }
+                
                 // 查找各种可能的国家选择器
                 var countrySelectors = [
                     'select[name="billing_country"]',
@@ -644,87 +651,89 @@ class Brazil_Checkout_Fields_Blocks {
                 var brazilPanel = $('.brazil-checkout-fields');
                 if (brazilPanel.length === 0) {
                     console.log('巴西面板未找到，跳过切换');
+                    isTogglingPanel = false;
                     return;
                 }
                 
                 if (isBrazilSelected) {
                     console.log('显示巴西面板');
-                    brazilPanel.removeClass('brazil-hidden').addClass('brazil-visible').hide().slideDown(300);
-                    $('#brazil_document').prop('required', true);
-                    
-                    // 确保验证函数被正确绑定
-                    setTimeout(function() {
-                        if (typeof window.validateBrazilFields === 'function') {
-                            console.log('巴西验证函数已就绪');
-                        } else {
-                            console.log('警告：巴西验证函数未就绪');
-                        }
-                    }, 500);
+                    if (!brazilPanel.hasClass('brazil-visible') && !brazilPanel.is(':animated')) {
+                        brazilPanel.removeClass('brazil-hidden').addClass('brazil-visible').hide().slideDown(300);
+                        $('#brazil_document').prop('required', true);
+                    }
                 } else {
                     console.log('隐藏巴西面板');
-                    brazilPanel.slideUp(300, function() {
-                        $(this).removeClass('brazil-visible').addClass('brazil-hidden');
-                    });
-                    $('#brazil_document').prop('required', false).val('');
-                    // 清空隐藏字段
-                    $('#brazil_customer_type').val('');
-                    $('#brazil_cpf').val('');
-                    $('#brazil_cnpj').val('');
-                    // 清除验证状态
-                    $('.brazil-document-error').hide();
-                    $('.brazil-document-success').hide();
-                    $('#brazil_document').removeClass('brazil-field-invalid brazil-field-valid');
-                    if (typeof brazilValidation !== 'undefined') {
-                        brazilValidation.hideErrors();
+                    if (brazilPanel.hasClass('brazil-visible') && !brazilPanel.is(':animated')) {
+                        brazilPanel.slideUp(300, function() {
+                            $(this).removeClass('brazil-visible').addClass('brazil-hidden');
+                        });
+                        $('#brazil_document').prop('required', false).val('');
+                        // 清空隐藏字段
+                        $('#brazil_customer_type').val('');
+                        $('#brazil_cpf').val('');
+                        $('#brazil_cnpj').val('');
+                        // 清除验证状态
+                        $('.brazil-document-error').hide();
+                        $('.brazil-document-success').hide();
+                        $('#brazil_document').removeClass('brazil-field-invalid brazil-field-valid');
+                        if (typeof brazilValidation !== 'undefined') {
+                            brazilValidation.hideErrors();
+                        }
                     }
                 }
+                
+                // 重置标志
+                setTimeout(function() {
+                    isTogglingPanel = false;
+                }, 300);
             }
             
             function setupFieldListeners() {
-                // 初始检查 - 延迟执行确保DOM完全加载
+                // 单次延迟初始检查 - 减少重复调用
                 setTimeout(function() {
                     console.log('执行初始国家检查');
                     checkCountryAndToggleBrazilFields();
-                }, 500);
+                }, 1000);
                 
-                // 再次检查，确保捕获到所有情况
-                setTimeout(function() {
-                    console.log('执行第二次国家检查');
-                    checkCountryAndToggleBrazilFields();
-                }, 2000);
-                
-                // 强制检查 - 确保非巴西国家时面板保持隐藏
-                setTimeout(function() {
-                    console.log('执行强制检查');
-                    var brazilPanel = $('.brazil-checkout-fields');
-                    if (brazilPanel.length > 0 && !brazilValidation.isBrazilCountrySelected()) {
-                        console.log('强制隐藏非巴西面板');
-                        brazilPanel.removeClass('brazil-visible').addClass('brazil-hidden').hide();
+                // 防抖的事件处理函数
+                function debouncedCountryCheck() {
+                    if (brazilPanelToggleTimeout) {
+                        clearTimeout(brazilPanelToggleTimeout);
                     }
-                }, 3000);
+                    brazilPanelToggleTimeout = setTimeout(function() {
+                        checkCountryAndToggleBrazilFields();
+                    }, 150);
+                }
                 
-                // 监听国家选择变化 - 使用事件委托
+                // 监听国家选择变化 - 使用事件委托和防抖
                 $(document).on('change', 'select[name="billing_country"], select[name="shipping_country"], #billing_country, #shipping_country, select[id*="country"], select[name*="country"]', function() {
                     console.log('国家选择发生变化:', $(this).attr('name') || $(this).attr('id'), '新值:', $(this).val());
-                    setTimeout(checkCountryAndToggleBrazilFields, 100);
+                    debouncedCountryCheck();
                 });
                 
                 // 监听输入事件（有些主题可能使用输入而不是选择）
                 $(document).on('input', 'select[name="billing_country"], select[name="shipping_country"], #billing_country, #shipping_country', function() {
                     console.log('国家输入发生变化:', $(this).attr('name') || $(this).attr('id'), '新值:', $(this).val());
-                    setTimeout(checkCountryAndToggleBrazilFields, 100);
+                    debouncedCountryCheck();
                 });
                 
-                // 使用MutationObserver监听DOM变化，以捕获动态生成的国家选择器
+                // 优化的MutationObserver - 减少触发频率
+                var mutationObserverTimeout = null;
                 var countryObserver = new MutationObserver(function(mutations) {
                     var shouldCheck = false;
+                    
+                    // 清除之前的定时器
+                    if (mutationObserverTimeout) {
+                        clearTimeout(mutationObserverTimeout);
+                    }
+                    
                     mutations.forEach(function(mutation) {
                         if (mutation.addedNodes.length > 0) {
                             $(mutation.addedNodes).find('select[name*="country"], select[id*="country"]').each(function() {
                                 console.log('检测到新的国家选择器:', $(this).attr('name') || $(this).attr('id'));
                                 $(this).on('change input', function() {
                                     console.log('新国家选择器变化:', $(this).val());
-                                    setTimeout(checkCountryAndToggleBrazilFields, 100);
+                                    debouncedCountryCheck();
                                 });
                                 shouldCheck = true;
                             });
@@ -741,7 +750,9 @@ class Brazil_Checkout_Fields_Blocks {
                     });
                     
                     if (shouldCheck) {
-                        setTimeout(checkCountryAndToggleBrazilFields, 100);
+                        mutationObserverTimeout = setTimeout(function() {
+                            debouncedCountryCheck();
+                        }, 200);
                     }
                 });
                 
@@ -861,9 +872,7 @@ class Brazil_Checkout_Fields_Blocks {
                 setupFieldListeners();
                 setupValidation();
                 
-                setTimeout(function() {
-                    checkCountryAndToggleBrazilFields();
-                }, 1000);
+                // 初始化面板显示状态将由setupFieldListeners处理，避免重复调用
             }
             
             function setupValidation() {
