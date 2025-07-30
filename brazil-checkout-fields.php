@@ -87,22 +87,22 @@ class Brazil_Checkout_Fields_Blocks {
         add_action('woocommerce_new_order', array($this, 'save_checkout_fields_new_order'), 10, 1);
         add_action('woocommerce_thankyou', array($this, 'save_checkout_fields_thankyou'), 5, 1);
         
-        // 显示字段在订单页面 - 多个位置确保显示
+        // 显示字段在订单页面 - 只保留最佳样式的显示
         add_action('woocommerce_order_details_after_customer_details', array($this, 'display_fields_in_order'));
-        add_action('woocommerce_view_order_details', array($this, 'display_fields_in_order_details'), 20);
-        add_action('woocommerce_thankyou', array($this, 'display_fields_in_thankyou'), 20);
+        // add_action('woocommerce_view_order_details', array($this, 'display_fields_in_order_details'), 20);
+        // add_action('woocommerce_thankyou', array($this, 'display_fields_in_thankyou'), 20);
         
-        // 额外的用户端显示Hook
-        add_action('woocommerce_order_details_after_order_table', array($this, 'display_fields_after_order_table'), 10);
-        add_action('woocommerce_view_order', array($this, 'display_fields_in_account_order'), 20);
-        add_action('woocommerce_order_details_before_order_table', array($this, 'display_fields_before_order_table'), 20);
+        // 额外的用户端显示Hook - 已禁用重复显示
+        // add_action('woocommerce_order_details_after_order_table', array($this, 'display_fields_after_order_table'), 10);
+        // add_action('woocommerce_view_order', array($this, 'display_fields_in_account_order'), 20);
+        // add_action('woocommerce_order_details_before_order_table', array($this, 'display_fields_before_order_table'), 20);
         
-        // 客户详情相关Hook
-        add_action('woocommerce_order_details_after_customer_details', array($this, 'display_fields_after_customer_details'), 25);
+        // 客户详情相关Hook - 已禁用重复显示
+        // add_action('woocommerce_order_details_after_customer_details', array($this, 'display_fields_after_customer_details'), 25);
         
-        // 后台管理订单页面显示
+        // 后台管理订单页面显示 - 只保留主要显示位置
         add_action('woocommerce_admin_order_data_after_billing_address', array($this, 'display_fields_in_admin_order'));
-        add_action('woocommerce_admin_order_data_after_shipping_address', array($this, 'display_fields_in_admin_order_shipping'));
+        // add_action('woocommerce_admin_order_data_after_shipping_address', array($this, 'display_fields_in_admin_order_shipping')); // 禁用重复显示
         
         // 订单邮件中显示
         add_action('woocommerce_email_customer_details', array($this, 'display_fields_in_email'), 20, 3);
@@ -2194,16 +2194,6 @@ class Brazil_Checkout_Fields_Blocks {
             echo '<strong>CNPJ:</strong> <span style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px; font-family: monospace;">' . esc_html($brazil_info['document']) . '</span></p>';
         }
         
-        // 添加验证状态指示器
-        $is_valid = $this->validate_document_format($brazil_info['document'], $brazil_info['type']);
-        echo '<p><strong>Status:</strong> ';
-        if ($is_valid) {
-            echo '<span style="color: #28a745; font-weight: bold;">✓ Documento Válido</span>';
-        } else {
-            echo '<span style="color: #dc3545; font-weight: bold;">⚠ Verificar Documento</span>';
-        }
-        echo '</p>';
-        
         echo '</div>';
     }
     
@@ -2404,76 +2394,97 @@ class Brazil_Checkout_Fields_Blocks {
         $order_id = $order->get_id();
         error_log('Brazil Checkout: get_brazil_order_info - Processing order ID: ' . $order_id);
         
-        // 优先检查新的统一文档字段
+        // 1. 优先检查新的统一文档字段
         $document = $order->get_meta('_brazil_document');
         $document_type = $order->get_meta('_brazil_document_type');
         
         error_log('Brazil Checkout: New unified fields - Document: ' . $document . ', Type: ' . $document_type);
         
-        if (!empty($document) && !empty($document_type)) {
-            error_log('Brazil Checkout: Found new unified fields data');
+        if (!empty($document)) {
+            error_log('Brazil Checkout: ✅ Found new unified document field');
+            
+            // 如果没有类型，尝试从customer_type获取
+            if (empty($document_type)) {
+                $customer_type = $order->get_meta('_brazil_customer_type');
+                if ($customer_type === 'pessoa_fisica') {
+                    $document_type = 'cpf';
+                } elseif ($customer_type === 'pessoa_juridica') {
+                    $document_type = 'cnpj';
+                } else {
+                    // 尝试自动检测
+                    $document_type = $this->detect_document_type($document);
+                }
+                error_log('Brazil Checkout: ✅ Determined document type: ' . $document_type);
+            }
+            
             return array(
                 'document' => $document,
-                'type' => $document_type
+                'type' => $document_type,
+                'customer_type' => $order->get_meta('_brazil_customer_type')
             );
         }
         
-        // 后备兼容性：检查旧字段
+        // 2. 检查带前缀的兼容字段
+        $billing_cpf = $order->get_meta('_billing_cpf');
+        $billing_cnpj = $order->get_meta('_billing_cnpj');
+        $billing_persontype = $order->get_meta('_billing_persontype');
+        
+        error_log('Brazil Checkout: Legacy billing fields - CPF: ' . $billing_cpf . ', CNPJ: ' . $billing_cnpj . ', PersonType: ' . $billing_persontype);
+        
+        if (!empty($billing_cpf)) {
+            error_log('Brazil Checkout: ✅ Found legacy CPF field');
+            return array(
+                'document' => $billing_cpf,
+                'type' => 'cpf',
+                'customer_type' => 'pessoa_fisica'
+            );
+        }
+        
+        if (!empty($billing_cnpj)) {
+            error_log('Brazil Checkout: ✅ Found legacy CNPJ field');
+            return array(
+                'document' => $billing_cnpj,
+                'type' => 'cnpj',
+                'customer_type' => 'pessoa_juridica'
+            );
+        }
+        
+        // 3. 检查旧格式字段
         $customer_type = $order->get_meta('_customer_type');
         $cpf = $order->get_meta('_cpf');
         $cnpj = $order->get_meta('_cnpj');
         
-        error_log('Brazil Checkout: Legacy fields - Customer Type: ' . $customer_type . ', CPF: ' . $cpf . ', CNPJ: ' . $cnpj);
+        error_log('Brazil Checkout: Old format fields - Customer Type: ' . $customer_type . ', CPF: ' . $cpf . ', CNPJ: ' . $cnpj);
         
         if ($customer_type === 'pessoa_fisica' && $cpf) {
-            error_log('Brazil Checkout: Found legacy CPF data');
+            error_log('Brazil Checkout: ✅ Found old format CPF data');
             return array(
                 'document' => $cpf,
-                'type' => 'cpf'
+                'type' => 'cpf',
+                'customer_type' => 'pessoa_fisica'
             );
         } elseif ($customer_type === 'pessoa_juridica' && $cnpj) {
-            error_log('Brazil Checkout: Found legacy CNPJ data');
+            error_log('Brazil Checkout: ✅ Found old format CNPJ data');
             return array(
                 'document' => $cnpj,
-                'type' => 'cnpj'
+                'type' => 'cnpj',
+                'customer_type' => 'pessoa_juridica'
             );
         }
         
-        // 额外检查：直接查找可能的字段变体
-        $possible_fields = array(
-            'brazil_document', 'brazil_cpf', 'brazil_cnpj', 'brazil_customer_type',
-            'billing_brazil_document', 'billing_cpf', 'billing_cnpj'
-        );
-        
-        foreach ($possible_fields as $field) {
-            $value = $order->get_meta($field);
-            if (!empty($value)) {
-                error_log('Brazil Checkout: Found potential field - ' . $field . ': ' . $value);
-            }
-            
-            // 也检查带下划线前缀的版本
-            $value_with_prefix = $order->get_meta('_' . $field);
-            if (!empty($value_with_prefix)) {
-                error_log('Brazil Checkout: Found potential field with prefix - _' . $field . ': ' . $value_with_prefix);
-            }
-        }
-        
-        // 最后尝试：检查没有前缀的字段
+        // 4. 检查没有前缀的字段
         $document_no_prefix = $order->get_meta('brazil_document');
-        $customer_type_no_prefix = $order->get_meta('brazil_customer_type');
-        
         if (!empty($document_no_prefix)) {
-            error_log('Brazil Checkout: Found document without prefix: ' . $document_no_prefix);
-            
-            // 尝试检测类型
+            error_log('Brazil Checkout: ✅ Found document without prefix: ' . $document_no_prefix);
             $detected_type = $this->detect_document_type($document_no_prefix);
             return array(
                 'document' => $document_no_prefix,
-                'type' => $detected_type
+                'type' => $detected_type,
+                'customer_type' => $detected_type === 'cpf' ? 'pessoa_fisica' : 'pessoa_juridica'
             );
         }
         
-        error_log('Brazil Checkout: No Brazil info found in order meta');
+        error_log('Brazil Checkout: ❌ No Brazil info found in order meta');
         return false;
     }
     
@@ -2891,6 +2902,88 @@ class Brazil_Checkout_Fields_Blocks {
             return $this->validate_cnpj($document);
         }
         return false;
+    }
+    
+    /**
+     * 验证CPF格式
+     */
+    private function validate_cpf($cpf) {
+        // 移除非数字字符
+        $cpf = preg_replace('/[^0-9]/', '', $cpf);
+        
+        // 检查长度
+        if (strlen($cpf) !== 11) {
+            return false;
+        }
+        
+        // 检查是否所有数字都相同
+        if (preg_match('/^(\d)\1{10}$/', $cpf)) {
+            return false;
+        }
+        
+        // 验证第一个校验位
+        $sum = 0;
+        for ($i = 0; $i < 9; $i++) {
+            $sum += intval($cpf[$i]) * (10 - $i);
+        }
+        $remainder = $sum % 11;
+        $digit1 = $remainder < 2 ? 0 : 11 - $remainder;
+        
+        if (intval($cpf[9]) !== $digit1) {
+            return false;
+        }
+        
+        // 验证第二个校验位
+        $sum = 0;
+        for ($i = 0; $i < 10; $i++) {
+            $sum += intval($cpf[$i]) * (11 - $i);
+        }
+        $remainder = $sum % 11;
+        $digit2 = $remainder < 2 ? 0 : 11 - $remainder;
+        
+        return intval($cpf[10]) === $digit2;
+    }
+    
+    /**
+     * 验证CNPJ格式
+     */
+    private function validate_cnpj($cnpj) {
+        // 移除非数字字符
+        $cnpj = preg_replace('/[^0-9]/', '', $cnpj);
+        
+        // 检查长度
+        if (strlen($cnpj) !== 14) {
+            return false;
+        }
+        
+        // 检查是否所有数字都相同
+        if (preg_match('/^(\d)\1{13}$/', $cnpj)) {
+            return false;
+        }
+        
+        // 验证第一个校验位
+        $weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+        $sum = 0;
+        for ($i = 0; $i < 12; $i++) {
+            $sum += intval($cnpj[$i]) * $weights1[$i];
+        }
+        $remainder = $sum % 11;
+        $digit1 = $remainder < 2 ? 0 : 11 - $remainder;
+        
+        if (intval($cnpj[12]) !== $digit1) {
+            return false;
+        }
+        
+        // 验证第二个校验位
+        $weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+        $sum = 0;
+        for ($i = 0; $i < 13; $i++) {
+            $sum += intval($cnpj[$i]) * $weights2[$i];
+        }
+        $remainder = $sum % 11;
+        $digit2 = $remainder < 2 ? 0 : 11 - $remainder;
+        
+        return intval($cnpj[13]) === $digit2;
     }
     
     /**
